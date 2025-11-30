@@ -78,6 +78,12 @@ It's an interesting idea to pin / mark certain applications like harpoon to fast
 
 Probably not useful.
 
+# Todos
+
+- CI/CD Pipeline
+- Install script
+- Update script
+
 # Bug List
 
 - first bug?
