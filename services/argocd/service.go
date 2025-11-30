@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sort"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -127,6 +128,10 @@ func (s *Service) ListApplications() ListApplicationsResponse {
 	debugResult, err := json.Marshal(result)
 	s.Logger.Debug(string(debugResult))
 
+	sort.Slice(result.Items, func(i, j int) bool {
+		return result.Items[i].Metadata.Name < result.Items[j].Metadata.Name
+	})
+
 	return result
 }
 
@@ -145,6 +150,10 @@ func (s *Service) GetResourceTree(application string) []ApplicationNode {
 	if err != nil {
 		s.Logger.Fatalf("Error with json decoder: %v", err)
 	}
+
+	sort.Slice(result.Nodes, func(i, j int) bool {
+		return result.Nodes[i].Name < result.Nodes[j].Name
+	})
 
 	return result.Nodes
 }
