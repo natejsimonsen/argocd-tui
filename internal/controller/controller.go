@@ -68,6 +68,50 @@ func (c *AppController) SetupEventHandlers() {
 
 	// TODO: improve tab / shift tab key logic
 	c.View.SideBar.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		isShiftPressed := event.Modifiers()&tcell.ModShift != 0
+
+		if event.Key() == tcell.KeyRune {
+			if event.Rune() == 'J' {
+				c.View.ScrollMainContent(1)
+				return nil
+			}
+
+			if event.Rune() == 'K' {
+				c.View.ScrollMainContent(-1)
+				return nil
+			}
+
+			if event.Rune() == 'D' {
+				c.View.PageMainContent(1)
+				return nil
+			}
+
+			if event.Rune() == 'U' {
+				c.View.PageMainContent(-1)
+				return nil
+			}
+		}
+
+		if event.Key() == tcell.KeyPgDn {
+			c.View.PageMainContent(1)
+			return nil
+		}
+
+		if event.Key() == tcell.KeyPgUp {
+			c.View.PageMainContent(-1)
+			return nil
+		}
+
+		if event.Key() == tcell.KeyDown && isShiftPressed {
+			c.View.ScrollMainContent(1)
+			return nil
+		}
+
+		if event.Key() == tcell.KeyUp && isShiftPressed {
+			c.View.ScrollMainContent(-1)
+			return nil
+		}
+
 		if event.Key() == tcell.KeyTab {
 			c.View.App.SetFocus(c.View.StatusBox)
 			return nil

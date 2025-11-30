@@ -35,7 +35,8 @@ func NewAppView(app *tview.Application) *AppView {
 
 	mainPage := tview.NewFlex()
 	mainContent := tview.NewTextView().
-		SetDynamicColors(true)
+		SetDynamicColors(true).
+		SetScrollable(true)
 
 	textList := tview.NewList().
 		SetHighlightFullLine(true).
@@ -103,6 +104,19 @@ func (v *AppView) UpdateAppList(apps []argocd.ApplicationItem) {
 		name := fmt.Sprintf("%s%s", colorTag, app.Metadata.Name)
 		v.AppList.AddItem(name, "", 0, nil)
 	}
+}
+
+func (v *AppView) ScrollMainContent(direction int) {
+	row, _ := v.MainContent.GetScrollOffset()
+	offset := 1
+	v.MainContent.ScrollTo(row+offset*direction, 0)
+}
+
+func (v *AppView) PageMainContent(direction int) {
+	row, _ := v.MainContent.GetScrollOffset()
+	_, _, _, height := v.MainContent.Primitive.GetRect()
+	offset := height / 2
+	v.MainContent.ScrollTo(row+offset*direction, 0)
 }
 
 func (v *AppView) UpdateMainContent(resources []argocd.ApplicationNode) {
