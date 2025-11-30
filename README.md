@@ -1,5 +1,7 @@
 # argocd-tui
 
+This is a beta of a piece of software to interact with ArgoCD
+
 ## Running the application
 
 To run the application, use the following command:
