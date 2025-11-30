@@ -9,8 +9,8 @@ type LoginToken struct {
 }
 
 type ListApplicationsResponse struct {
-	Items    []ApplicationItems `json:"items"`
-	Metadata map[string]any     `json:"metadata"`
+	Items    []ApplicationItem `json:"items"`
+	Metadata map[string]any    `json:"metadata"`
 }
 
 type ApplicationMetadata struct {
@@ -34,7 +34,7 @@ type ApplicationStatus struct {
 	} `json:"health"`
 }
 
-type ApplicationItems struct {
+type ApplicationItem struct {
 	Metadata  ApplicationMetadata `json:"metadata"`
 	Operation map[string]any      `json:"operation"`
 	Spec      map[string]any      `json:"spec"`
