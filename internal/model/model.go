@@ -11,20 +11,22 @@ type AppModel struct {
 	Applications         []argocd.ApplicationItem
 	SelectedAppName      string
 	SelectedAppResources []argocd.ApplicationNode
-	SelectedIndex        int
+	PrevIndex            int
+	PrevText             string
 }
 
 func NewAppModel(logger *logrus.Logger, svc *argocd.Service) *AppModel {
 	return &AppModel{
 		ArgoCDService: svc,
 		Logger:        logger,
-		SelectedIndex: -1,
+		PrevIndex:     0,
 	}
 }
 
 func (m *AppModel) LoadApplications() {
 	result := m.ArgoCDService.ListApplications()
 	m.Applications = result.Items
+	m.PrevText = result.Items[0].Metadata.Name
 }
 
 func (m *AppModel) LoadResources(appName string) {

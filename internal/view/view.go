@@ -91,6 +91,11 @@ func NewAppView(app *tview.Application) *AppView {
 	}
 }
 
+func (v *AppView) UpdateTitles(index, prevIndex int, text, prevText string) {
+	v.AppList.SetItemText(prevIndex, prevText, "")
+	v.AppList.SetItemText(index, "[::b]"+text, "")
+}
+
 func (v *AppView) UpdateAppList(apps []argocd.ApplicationItem) {
 	for _, app := range apps {
 		colorTag := GetColorTag(app.Status.Health.Status)

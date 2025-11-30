@@ -25,9 +25,12 @@ func (c *AppController) SetupEventHandlers() {
 		appName := utils.StripTags(mainText)
 
 		c.Model.LoadResources(appName)
-		c.Model.SelectedIndex = index
 
 		c.View.UpdateMainContent(c.Model.SelectedAppResources)
+		c.View.UpdateTitles(index, c.Model.PrevIndex, appName, c.Model.PrevText)
+
+		c.Model.PrevText = mainText
+		c.Model.PrevIndex = index
 	})
 
 	// application vim-like navigation
