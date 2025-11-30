@@ -1,8 +1,16 @@
 # Essential Features
 
-## Default Sorting - Easy
+## Scrollable Content - Easy
 
-Every pane should sort by some field (name, time added, etc) to ensure consistency
+Content needs to be scrollable both by shift down, shift up, J, K and pgDwn, pgUp, and D and U
+
+## Copiable Content - Easy
+
+Any "Main Content" should have easy to copy-to-clipboard contents with "c"
+
+## Raw JSON - Medium
+
+Any resource should be viewable / expandable / editable by JSON or YAML funcitonality
 
 ## Events Pane - Easy
 
