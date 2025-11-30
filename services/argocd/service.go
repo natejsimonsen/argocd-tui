@@ -10,11 +10,17 @@ import (
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 const ARGOCD_SERVER = "http://localhost:8080"
 
 var token string
+
+type Service struct {
+	Logger *logrus.Logger
+}
 
 func getClient() *http.Client {
 	tr := &http.Transport{
@@ -69,7 +75,7 @@ func login() {
 	token = loginToken.Token
 }
 
-func ListApplications() ListApplicationsResponse {
+func (s *Service) ListApplications() ListApplicationsResponse {
 	if len(token) == 0 {
 		login()
 	}
@@ -101,4 +107,94 @@ func ListApplications() ListApplicationsResponse {
 	}
 
 	return result
+}
+
+func (s *Service) GetResourceTree(application string) []ApplicationNode {
+	if len(token) == 0 {
+		login()
+	}
+
+	client := getClient()
+
+	req, err := http.NewRequest(
+		"GET",
+		fmt.Sprintf("%s/api/v1/applications/%s/resource-tree", ARGOCD_SERVER, application),
+		nil,
+	)
+	if err != nil {
+		s.Logger.Fatalf("Error making request : %v", err)
+		return nil
+	}
+
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", token))
+	req.Header.Add("Accept", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		s.Logger.Fatalf("Error executing request: %v", err)
+		return nil
+	}
+
+	defer resp.Body.Close()
+
+	var result ResourceTreeResponse
+
+	err = json.NewDecoder(resp.Body).Decode(&result)
+	if err != nil {
+		s.Logger.Fatalf("Error with json decoder: %v", err)
+	}
+
+	return result.Nodes
+}
+
+func (s *Service) GetApplicationManifests(application string) []ApplicationManifest {
+	if len(token) == 0 {
+		login()
+	}
+
+	client := getClient()
+
+	req, err := http.NewRequest(
+		"GET",
+		fmt.Sprintf("%s/api/v1/applications/%s/manifests", ARGOCD_SERVER, application),
+		nil,
+	)
+	if err != nil {
+		s.Logger.Fatalf("Error creating request: %v", err)
+		return nil
+	}
+
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Fatalf("Error executing request: %v", err)
+		return nil
+	}
+
+	defer resp.Body.Close()
+
+	var manifests ApplicationManifestsResponse
+
+	err = json.NewDecoder(resp.Body).Decode(&manifests)
+	if err != nil {
+		log.Fatalf("Error decoding json: %v", err)
+		return nil
+	}
+
+	appManifests := []ApplicationManifest{}
+
+	for _, manifest := range manifests.Manifests {
+		s.Logger.Debug(manifest)
+		var appManifest ApplicationManifest
+		err := json.Unmarshal([]byte(manifest), &appManifest)
+		if err != nil {
+			s.Logger.Fatalf("Error unmarshaling json: %v", err)
+			return nil
+		}
+		appManifests = append(appManifests, appManifest)
+	}
+
+	return appManifests
 }

@@ -1,7 +1,10 @@
 package main
 
 import (
+	"fmt"
+
 	"example.com/main/services/argocd"
+	"example.com/main/services/logger"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
@@ -28,12 +31,16 @@ func main() {
 	app := tview.NewApplication()
 	setTheme()
 
-	mainPage := tview.NewFlex()
-	mainContent := tview.NewBox().
-		SetBorder(true).
-		SetTitle(" Main Content ")
+	logger := logger.SetupLogger()
+	argocdSvc := argocd.Service{
+		Logger: logger,
+	}
 
-	result := argocd.ListApplications()
+	mainPage := tview.NewFlex()
+	mainContent := tview.NewTextView().
+		SetDynamicColors(true)
+
+	result := argocdSvc.ListApplications()
 	textList := tview.NewList().
 		SetHighlightFullLine(true).
 		ShowSecondaryText(false).
@@ -47,6 +54,21 @@ func main() {
 		SetFocusFunc(func() {
 			textList.SetBorderColor(tcell.ColorAquaMarine)
 		})
+
+	textList.SetChangedFunc(func(index int, mainText, secondaryText string, shortcut rune) {
+		manifests := argocdSvc.GetResourceTree(mainText)
+		text := ""
+
+		for _, manifest := range manifests {
+			text += fmt.Sprintf("Kind: [aqua]%s[end]\nName: [green]%s[end]\n\n", manifest.Kind, manifest.Name)
+		}
+
+		mainContent.SetText(text)
+	})
+
+	mainContent.
+		SetBorder(true).
+		SetTitle(" Main Content ")
 
 	textList.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyRune {
@@ -85,18 +107,6 @@ func main() {
 
 	sideBar := tview.NewFlex().SetDirection(tview.FlexRow)
 
-	sideBar.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		if event.Key() == tcell.KeyTab {
-			return nil
-		}
-
-		if event.Key() == tcell.KeyBacktab {
-			return nil
-		}
-
-		return event
-	})
-
 	textList.
 		SetBorder(true).
 		SetTitle(" Applications ")
@@ -112,6 +122,20 @@ func main() {
 		SetBlurFunc(func() {
 			bsBox.SetBorderColor(tview.Styles.BorderColor)
 		})
+
+	sideBar.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Key() == tcell.KeyTab {
+			app.SetFocus(bsBox)
+			return nil
+		}
+
+		if event.Key() == tcell.KeyBacktab {
+			app.SetFocus(textList)
+			return nil
+		}
+
+		return event
+	})
 
 	sideBar.
 		AddItem(textList, 0, 1, true).

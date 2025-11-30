@@ -1,17 +1,103 @@
 package argocd
 
+import (
+	"time"
+)
+
 type LoginToken struct {
 	Token string `json:"token"`
 }
 
 type ListApplicationsResponse struct {
-	Items    []ApplicationItems     `json:"items"`
-	Metadata map[string]interface{} `json:"metadata"`
+	Items    []ApplicationItems `json:"items"`
+	Metadata map[string]any     `json:"metadata"`
 }
 
 type ApplicationItems struct {
-	Metadata  map[string]interface{} `json:"metadata"`
-	Operation map[string]interface{} `json:"operation"`
-	Spec      map[string]interface{} `json:"spec"`
-	Status    map[string]interface{} `json:"status"`
+	Metadata  map[string]any `json:"metadata"`
+	Operation map[string]any `json:"operation"`
+	Spec      map[string]any `json:"spec"`
+	Status    map[string]any `json:"status"`
+}
+
+type ParentRef struct {
+	Group     string `json:"group"`
+	Version   string `json:"version"`
+	Kind      string `json:"kind"`
+	Namespace string `json:"namespace"`
+	Name      string `json:"name"`
+	UID       string `json:"uid"`
+}
+
+type InfoItem struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
+type NetworkingInfo struct {
+	Labels map[string]string `json:"labels"`
+}
+
+type Health struct {
+	Status string `json:"status"`
+}
+
+type ResourceTreeResponse struct {
+	Nodes []ApplicationNode `json:"nodes"`
+}
+
+type ApplicationNode struct {
+	Version         string         `json:"version"`
+	Kind            string         `json:"kind"`
+	Namespace       string         `json:"namespace"`
+	Name            string         `json:"name"`
+	UID             string         `json:"uid"`
+	ParentRefs      []ParentRef    `json:"parentRefs"`
+	Info            []InfoItem     `json:"info"`
+	NetworkingInfo  NetworkingInfo `json:"networkingInfo"`
+	ResourceVersion string         `json:"resourceVersion"`
+	Images          []string       `json:"images"`
+	Health          Health         `json:"health"`
+	CreatedAt       time.Time      `json:"createdAt"`
+}
+
+type ApplicationManifestsResponse struct {
+	Manifests []string `json:"manifests"`
+}
+
+type ApplicationManifest struct {
+	APIVersion string `json:"apiVersion"`
+	Kind       string `json:"kind"`
+	Name       string `json:"name"`
+	Metadata   struct {
+		Name        string            `json:"name"`
+		Namespace   string            `json:"namespace"`
+		Annotations map[string]string `json:"annotations"`
+		Finalizers  []string          `json:"finalizers"`
+	} `json:"metadata"`
+	Spec struct {
+		Destination struct {
+			Namespace string `json:"namespace"`
+			Server    string `json:"server"`
+		} `json:"destination"`
+		Project string `json:"project"`
+		Source  struct {
+			Path           string `json:"path"`
+			RepoURL        string `json:"repoURL"`
+			TargetRevision string `json:"targetRevision"`
+			Helm           struct {
+				ReleaseName string `json:"releaseName"`
+			} `json:"helm"`
+			Plugin struct {
+				Name string `json:"name"`
+			} `json:"plugin"`
+		} `json:"source"`
+		SyncPolicy struct {
+			Automated struct {
+				Prune    bool `json:"prune"`
+				SelfHeal bool `json:"selfHeal"`
+			} `json:"automated"`
+			SyncOptions []string `json:"syncOptions"`
+		} `json:"syncPolicy"`
+	} `json:"spec"`
 }
