@@ -1,10 +1,9 @@
 package main
 
 import (
-	"fmt"
-
 	"example.com/main/services/argocd"
 	"example.com/main/services/logger"
+	"fmt"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
@@ -32,9 +31,7 @@ func main() {
 	setTheme()
 
 	logger := logger.SetupLogger()
-	argocdSvc := argocd.Service{
-		Logger: logger,
-	}
+	argocdSvc := argocd.NewService(logger)
 
 	mainPage := tview.NewFlex()
 	mainContent := tview.NewTextView().
