@@ -1,7 +1,7 @@
 run:
 	go run cmd/main.go
 build:
-	rm ./argocd-tui
-	go build cmd/main.go -o ./argocd-tui
+	rm -f ./argocd-tui
+	go build -o ./argocd-tui cmd/main.go 
 test:
 	go test ./...
