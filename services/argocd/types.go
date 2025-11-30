@@ -13,11 +13,32 @@ type ListApplicationsResponse struct {
 	Metadata map[string]any     `json:"metadata"`
 }
 
+type ApplicationMetadata struct {
+	Name   string `json:"name"`
+	Status string `json:"status"`
+}
+
+type ApplicationHealthStatus string
+
+const (
+	StatusHealthy     ApplicationHealthStatus = "Healthy"
+	StatusMissing     ApplicationHealthStatus = "Missing"
+	StatusProgressing ApplicationHealthStatus = "Progressing"
+	StatusUnknown     ApplicationHealthStatus = "Unknown"
+	StatusDegraded    ApplicationHealthStatus = "Degraded"
+)
+
+type ApplicationStatus struct {
+	Health struct {
+		Status ApplicationHealthStatus `json:"status"`
+	} `json:"health"`
+}
+
 type ApplicationItems struct {
-	Metadata  map[string]any `json:"metadata"`
-	Operation map[string]any `json:"operation"`
-	Spec      map[string]any `json:"spec"`
-	Status    map[string]any `json:"status"`
+	Metadata  ApplicationMetadata `json:"metadata"`
+	Operation map[string]any      `json:"operation"`
+	Spec      map[string]any      `json:"spec"`
+	Status    ApplicationStatus   `json:"status"`
 }
 
 type ParentRef struct {

@@ -124,6 +124,9 @@ func (s *Service) ListApplications() ListApplicationsResponse {
 		log.Fatalf("Error decoding json: %v", err)
 	}
 
+	debugResult, err := json.Marshal(result)
+	s.Logger.Debug(string(debugResult))
+
 	return result
 }
 

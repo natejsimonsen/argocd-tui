@@ -1,12 +1,39 @@
 package main
 
 import (
+	"fmt"
+
 	"example.com/main/services/argocd"
 	"example.com/main/services/logger"
-	"fmt"
+	"example.com/main/services/utils"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
+
+func GetColorTag(status argocd.ApplicationHealthStatus) string {
+	colorTag := ""
+	if string(status) == string(argocd.StatusHealthy) {
+		colorTag = "[green]"
+	}
+
+	if string(status) == string(argocd.StatusDegraded) {
+		colorTag = "[red]"
+	}
+
+	if string(status) == string(argocd.StatusMissing) {
+		colorTag = "[yellow]"
+	}
+
+	if string(status) == string(argocd.StatusUnknown) {
+		colorTag = "[grey]"
+	}
+
+	if string(status) == string(argocd.StatusProgressing) {
+		colorTag = "[blue]"
+	}
+
+	return colorTag
+}
 
 func setTheme() {
 	theme := tview.Theme{
@@ -27,6 +54,9 @@ func setTheme() {
 }
 
 func main() {
+	PrevText := ""
+	PrevIndex := -1
+
 	app := tview.NewApplication()
 	setTheme()
 
@@ -53,7 +83,17 @@ func main() {
 		})
 
 	textList.SetChangedFunc(func(index int, mainText, secondaryText string, shortcut rune) {
-		manifests := argocdSvc.GetResourceTree(mainText)
+		newText := utils.StripTags(mainText)
+		textList.SetItemText(index, newText, "")
+
+		if PrevText != "" {
+			textList.SetItemText(PrevIndex, PrevText, "")
+		}
+
+		PrevText = mainText
+		PrevIndex = index
+
+		manifests := argocdSvc.GetResourceTree(utils.StripTags(mainText))
 		text := ""
 
 		for _, manifest := range manifests {
@@ -95,11 +135,15 @@ func main() {
 				textList.SetCurrentItem(textList.GetCurrentItem() + 1)
 			}
 		}
+
 		return event
 	})
 
 	for _, item := range result.Items {
-		textList.AddItem(item.Metadata["name"].(string), "", 0, nil)
+		colorTag := GetColorTag(item.Status.Health.Status)
+
+		name := fmt.Sprintf("%s%s", colorTag, item.Metadata.Name)
+		textList.AddItem(name, "", 0, nil)
 	}
 
 	sideBar := tview.NewFlex().SetDirection(tview.FlexRow)
