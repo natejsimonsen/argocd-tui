@@ -1,8 +1,9 @@
 package view
 
 import (
-	"example.com/main/services/argocd"
 	"fmt"
+
+	"example.com/main/services/argocd"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
@@ -13,6 +14,7 @@ type AppView struct {
 	SideBar     *tview.Flex
 	AppList     *tview.List
 	MainContent *tview.TextView
+	MainTable   *tview.Table
 	StatusBox   *tview.Box
 }
 
@@ -74,13 +76,18 @@ func NewAppView(app *tview.Application) *AppView {
 			bsBox.SetBorderColor(tview.Styles.BorderColor)
 		})
 
+	mainTable := tview.NewTable().SetBorders(true)
+
+	mainTable.SetTitle(" Main Content ")
+	mainTable.SetSelectable(true, true)
+
 	sideBar.
 		AddItem(textList, 0, 1, true).
 		AddItem(bsBox, 0, 1, true)
 
 	mainPage.
 		AddItem(sideBar, 0, 1, true).
-		AddItem(mainContent, 0, 3, false)
+		AddItem(mainTable, 0, 3, false)
 
 	return &AppView{
 		App:         app,
@@ -88,6 +95,7 @@ func NewAppView(app *tview.Application) *AppView {
 		SideBar:     sideBar,
 		AppList:     textList,
 		MainContent: mainContent,
+		MainTable:   mainTable,
 		StatusBox:   bsBox,
 	}
 }
@@ -107,26 +115,49 @@ func (v *AppView) UpdateAppList(apps []argocd.ApplicationItem) {
 }
 
 func (v *AppView) ScrollMainContent(direction int) {
-	row, _ := v.MainContent.GetScrollOffset()
+	row, _ := v.MainTable.GetSelection()
 	offset := 1
-	v.MainContent.ScrollTo(row+offset*direction, 0)
+	v.MainTable.Select(row+offset*direction, 0)
 }
 
 func (v *AppView) PageMainContent(direction int) {
 	row, _ := v.MainContent.GetScrollOffset()
 	_, _, _, height := v.MainContent.Primitive.GetRect()
 	offset := height / 2
-	v.MainContent.ScrollTo(row+offset*direction, 0)
+	newScroll := row + offset*direction
+	v.MainContent.ScrollTo(newScroll, 0)
 }
 
 func (v *AppView) UpdateMainContent(resources []argocd.ApplicationNode) {
-	text := ""
+	v.MainTable.Clear()
 
-	for _, manifest := range resources {
-		text += fmt.Sprintf("Kind: [aqua]%s[end]\nName: [green]%s[end]\n\n", manifest.Kind, manifest.Name)
+	if len(resources) == 0 {
+		v.MainTable.SetCell(0, 0,
+			tview.NewTableCell("No data").
+				SetTextColor(tcell.ColorWhite).
+				SetAlign(tview.AlignCenter))
+		return
 	}
 
-	v.MainContent.SetText(text)
+	v.MainTable.SetCell(0, 0,
+		tview.NewTableCell("Name").
+			SetTextColor(tcell.ColorWhite).
+			SetAlign(tview.AlignCenter))
+	v.MainTable.SetCell(0, 1,
+		tview.NewTableCell("Kind").
+			SetTextColor(tcell.ColorWhite).
+			SetAlign(tview.AlignCenter))
+
+	for row, manifest := range resources {
+		v.MainTable.SetCell(row+1, 0,
+			tview.NewTableCell(manifest.Name).
+				SetTextColor(tcell.ColorWhite).
+				SetAlign(tview.AlignCenter))
+		v.MainTable.SetCell(row+1, 1,
+			tview.NewTableCell(manifest.Kind).
+				SetTextColor(tcell.ColorWhite).
+				SetAlign(tview.AlignCenter))
+	}
 }
 
 func GetColorTag(status argocd.ApplicationHealthStatus) string {

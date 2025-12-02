@@ -11,6 +11,7 @@ type AppModel struct {
 	Applications         []argocd.ApplicationItem
 	SelectedAppName      string
 	SelectedAppResources []argocd.ApplicationNode
+	ScrollOffset         int
 	PrevIndex            int
 	PrevText             string
 }
