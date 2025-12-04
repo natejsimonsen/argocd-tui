@@ -4,12 +4,14 @@ import (
 	"fmt"
 
 	"example.com/main/services/argocd"
+	"example.com/main/services/config"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
 
 type AppView struct {
 	App         *tview.Application
+	Config      config.Config
 	MainPage    *tview.Flex
 	SideBar     *tview.Flex
 	AppList     *tview.List
@@ -18,7 +20,7 @@ type AppView struct {
 	StatusBox   *tview.Box
 }
 
-func NewAppView(app *tview.Application) *AppView {
+func NewAppView(app *tview.Application, config *config.Config) *AppView {
 	theme := tview.Theme{
 		PrimitiveBackgroundColor:    tcell.ColorDefault,
 		ContrastBackgroundColor:     tcell.ColorBlack,
@@ -76,10 +78,17 @@ func NewAppView(app *tview.Application) *AppView {
 			bsBox.SetBorderColor(tview.Styles.BorderColor)
 		})
 
-	mainTable := tview.NewTable().SetBorders(true)
+	mainTable := tview.NewTable()
+
+	tableStyle := tcell.StyleDefault.
+		Background(config.Background).
+		Foreground(tcell.ColorDarkSlateGray).
+		Bold(true)
+
+	mainTable.SetSelectedStyle(tableStyle)
 
 	mainTable.SetTitle(" Main Content ")
-	mainTable.SetSelectable(true, true)
+	mainTable.SetSelectable(true, false)
 
 	sideBar.
 		AddItem(textList, 0, 1, true).
@@ -117,7 +126,17 @@ func (v *AppView) UpdateAppList(apps []argocd.ApplicationItem) {
 func (v *AppView) ScrollMainContent(direction int) {
 	row, _ := v.MainTable.GetSelection()
 	offset := 1
-	v.MainTable.Select(row+offset*direction, 0)
+	newRow := row + offset*direction
+
+	if newRow == 0 {
+		newRow++
+	}
+
+	if newRow == v.MainTable.GetRowCount() {
+		return
+	}
+
+	v.MainTable.Select(newRow, 0)
 }
 
 func (v *AppView) PageMainContent(direction int) {
@@ -135,29 +154,64 @@ func (v *AppView) UpdateMainContent(resources []argocd.ApplicationNode) {
 		v.MainTable.SetCell(0, 0,
 			tview.NewTableCell("No data").
 				SetTextColor(tcell.ColorWhite).
-				SetAlign(tview.AlignCenter))
+				SetAlign(tview.AlignLeft))
 		return
 	}
 
-	v.MainTable.SetCell(0, 0,
-		tview.NewTableCell("Name").
-			SetTextColor(tcell.ColorWhite).
-			SetAlign(tview.AlignCenter))
-	v.MainTable.SetCell(0, 1,
-		tview.NewTableCell("Kind").
-			SetTextColor(tcell.ColorWhite).
-			SetAlign(tview.AlignCenter))
+	type TableCell struct {
+		ColumnName  string
+		ColumnValue string
+	}
+
+	columns := []string{"Name", "Kind", "Status"}
+
+	for i, column := range columns {
+		v.MainTable.SetCell(0, i,
+			tview.NewTableCell(column).
+				SetTextColor(tcell.ColorWhite).
+				SetAlign(tview.AlignLeft))
+	}
 
 	for row, manifest := range resources {
-		v.MainTable.SetCell(row+1, 0,
-			tview.NewTableCell(manifest.Name).
-				SetTextColor(tcell.ColorWhite).
-				SetAlign(tview.AlignCenter))
-		v.MainTable.SetCell(row+1, 1,
-			tview.NewTableCell(manifest.Kind).
-				SetTextColor(tcell.ColorWhite).
-				SetAlign(tview.AlignCenter))
+		color := tcell.ColorLightGray
+
+		if manifest.Health.Status == string(argocd.StatusDegraded) {
+			color = tcell.ColorRed
+		}
+
+		for i, column := range columns {
+			value := ""
+
+			if column == "Name" {
+				value = manifest.Name
+			}
+			if column == "Kind" {
+				value = manifest.Kind
+			}
+			if column == "Status" {
+				value = manifest.Health.Status
+			}
+
+			tableCell := tview.NewTableCell(value).
+				SetTextColor(color).
+				SetAlign(tview.AlignLeft)
+
+			if manifest.Health.Status == string(argocd.StatusDegraded) {
+				tableCell.
+					SetSelectedStyle(
+						tcell.StyleDefault.
+							Background(tcell.ColorRed).
+							Foreground(tcell.ColorDarkSlateGray).
+							Bold(true),
+					)
+			}
+
+			v.MainTable.SetCell(row+1, i, tableCell)
+
+		}
 	}
+
+	v.MainTable.Select(1, 0)
 }
 
 func GetColorTag(status argocd.ApplicationHealthStatus) string {

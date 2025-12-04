@@ -6,6 +6,7 @@ require (
 	github.com/gdamore/tcell/v2 v2.8.1
 	github.com/rivo/tview v0.42.1-0.20250929082832-e113793670e2
 	github.com/sirupsen/logrus v1.9.3
+	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
 )
 
 require (

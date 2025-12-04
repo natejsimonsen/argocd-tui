@@ -5,6 +5,7 @@ import (
 	"example.com/main/internal/model"
 	"example.com/main/internal/view"
 	"example.com/main/services/argocd"
+	"example.com/main/services/config"
 	"example.com/main/services/logger"
 	"github.com/rivo/tview"
 )
@@ -14,7 +15,8 @@ func main() {
 	l := logger.SetupLogger()
 	argocdSvc := argocd.NewService(l)
 	appModel := model.NewAppModel(l, argocdSvc)
-	appView := view.NewAppView(app)
+	config := config.NewConfig()
+	appView := view.NewAppView(app, config)
 	appController := controller.NewAppController(
 		appModel,
 		appView,
