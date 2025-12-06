@@ -19,7 +19,11 @@ func GetTag(text string) string {
 	return tviewTagRegex.FindString(text)
 }
 
-func HexToColor(hexStr string) tcell.Color {
+func HexToColor(hexStr string, def tcell.Color) tcell.Color {
+	if hexStr == "" {
+		return def
+	}
+
 	hex := strings.TrimPrefix(hexStr, "#")
 
 	v, err := strconv.ParseInt(hex, 16, 32)
@@ -28,5 +32,6 @@ func HexToColor(hexStr string) tcell.Color {
 		return tcell.ColorDefault
 	}
 
-	return tcell.NewHexColor(int32(v))
+	userColor := tcell.NewHexColor(int32(v))
+	return userColor
 }

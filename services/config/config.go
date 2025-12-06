@@ -19,6 +19,7 @@ type Config struct {
 }
 
 func NewConfig() *Config {
+	// TODO: make this load from home dir
 	path := "/home/nate/.config/argocd-tui/config.yaml"
 
 	fileBytes, err := os.ReadFile(path)
@@ -34,7 +35,7 @@ func NewConfig() *Config {
 	}
 
 	externalConfig := Config{
-		Background: utils.HexToColor(config.Background),
+		Background: utils.HexToColor(config.Background, tcell.ColorSkyblue),
 	}
 
 	return &externalConfig

@@ -2,6 +2,7 @@ package view
 
 import (
 	"fmt"
+	"strings"
 
 	"example.com/main/services/argocd"
 	"example.com/main/services/config"
@@ -15,7 +16,7 @@ type AppView struct {
 	MainPage    *tview.Flex
 	SideBar     *tview.Flex
 	AppList     *tview.List
-	MainContent *tview.TextView
+	MainContent *tview.Flex
 	MainTable   *tview.Table
 	StatusBox   *tview.Box
 }
@@ -38,9 +39,7 @@ func NewAppView(app *tview.Application, config *config.Config) *AppView {
 	tview.Styles = theme
 
 	mainPage := tview.NewFlex()
-	mainContent := tview.NewTextView().
-		SetDynamicColors(true).
-		SetScrollable(true)
+	mainContent := tview.NewFlex()
 
 	textList := tview.NewList().
 		SetHighlightFullLine(true).
@@ -86,7 +85,6 @@ func NewAppView(app *tview.Application, config *config.Config) *AppView {
 		Bold(true)
 
 	mainTable.SetSelectedStyle(tableStyle)
-
 	mainTable.SetTitle(" Main Content ")
 	mainTable.SetSelectable(true, false)
 
@@ -94,9 +92,13 @@ func NewAppView(app *tview.Application, config *config.Config) *AppView {
 		AddItem(textList, 0, 1, true).
 		AddItem(bsBox, 0, 1, true)
 
+	mainContent.
+		AddItem(mainTable, 0, 1, true).
+		SetBorder(true)
+
 	mainPage.
 		AddItem(sideBar, 0, 1, true).
-		AddItem(mainTable, 0, 3, false)
+		AddItem(mainContent, 0, 3, false)
 
 	return &AppView{
 		App:         app,
@@ -140,11 +142,19 @@ func (v *AppView) ScrollMainContent(direction int) {
 }
 
 func (v *AppView) PageMainContent(direction int) {
-	row, _ := v.MainContent.GetScrollOffset()
-	_, _, _, height := v.MainContent.Primitive.GetRect()
-	offset := height / 2
-	newScroll := row + offset*direction
-	v.MainContent.ScrollTo(newScroll, 0)
+	row, _ := v.MainTable.GetSelection()
+	offset := 1
+	newRow := row + offset*direction
+
+	if newRow == 0 {
+		newRow++
+	}
+
+	if newRow == v.MainTable.GetRowCount() {
+		return
+	}
+
+	v.MainTable.Select(newRow, 0)
 }
 
 func (v *AppView) UpdateMainContent(resources []argocd.ApplicationNode) {
@@ -163,7 +173,7 @@ func (v *AppView) UpdateMainContent(resources []argocd.ApplicationNode) {
 		ColumnValue string
 	}
 
-	columns := []string{"Name", "Kind", "Status"}
+	columns := []string{"Name", "Kind", "Health", "Namespace", "Version", "Resource Version", "Images"}
 
 	for i, column := range columns {
 		v.MainTable.SetCell(0, i,
@@ -173,7 +183,7 @@ func (v *AppView) UpdateMainContent(resources []argocd.ApplicationNode) {
 	}
 
 	for row, manifest := range resources {
-		color := tcell.ColorLightGray
+		color := tcell.ColorWhiteSmoke
 
 		if manifest.Health.Status == string(argocd.StatusDegraded) {
 			color = tcell.ColorRed
@@ -188,8 +198,20 @@ func (v *AppView) UpdateMainContent(resources []argocd.ApplicationNode) {
 			if column == "Kind" {
 				value = manifest.Kind
 			}
-			if column == "Status" {
+			if column == "Health" {
 				value = manifest.Health.Status
+			}
+			if column == "Namespace" {
+				value = manifest.Namespace
+			}
+			if column == "Version" {
+				value = manifest.Version
+			}
+			if column == "Resource Version" {
+				value = manifest.ResourceVersion
+			}
+			if column == "Images" {
+				value = strings.Join(manifest.Images, ", ")
 			}
 
 			tableCell := tview.NewTableCell(value).
@@ -207,7 +229,6 @@ func (v *AppView) UpdateMainContent(resources []argocd.ApplicationNode) {
 			}
 
 			v.MainTable.SetCell(row+1, i, tableCell)
-
 		}
 	}
 
