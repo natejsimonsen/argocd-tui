@@ -100,6 +100,11 @@ func (c *AppController) SetupEventHandlers() {
 				c.View.PageMainContent(-1)
 				return nil
 			}
+
+			if event.Rune() == '/' {
+				c.View.ToggleCommandBar()
+				return nil
+			}
 		}
 
 		if event.Key() == tcell.KeyPgDn {
@@ -151,6 +156,6 @@ func (c *AppController) Start() error {
 	c.SetupEventHandlers()
 	c.Model.LoadApplications()
 	c.View.UpdateAppList(c.Model.Applications)
-	c.View.App.SetRoot(c.View.MainPage, true)
+	c.View.App.SetRoot(c.View.MainPageContainer, true)
 	return c.View.App.Run()
 }

@@ -11,14 +11,17 @@ import (
 )
 
 type AppView struct {
-	App         *tview.Application
-	Config      config.Config
-	MainPage    *tview.Flex
-	SideBar     *tview.Flex
-	AppList     *tview.List
-	MainContent *tview.Flex
-	MainTable   *tview.Table
-	StatusBox   *tview.Box
+	App                  *tview.Application
+	Config               config.Config
+	MainPage             *tview.Flex
+	SideBar              *tview.Flex
+	AppList              *tview.List
+	CommandBar           *tview.Flex
+	SearchInput          *tview.InputField
+	MainContentContainer *tview.Flex
+	MainPageContainer    *tview.Flex
+	MainTable            *tview.Table
+	StatusBox            *tview.Box
 }
 
 func NewAppView(app *tview.Application, config *config.Config) *AppView {
@@ -39,7 +42,14 @@ func NewAppView(app *tview.Application, config *config.Config) *AppView {
 	tview.Styles = theme
 
 	mainPage := tview.NewFlex()
-	mainContent := tview.NewFlex()
+	mainContentContainer := tview.NewFlex()
+	sideBar := tview.NewFlex().
+		SetDirection(tview.FlexRow)
+	commandBar := tview.NewFlex()
+	mainTable := tview.NewTable()
+	searchInput := tview.NewInputField()
+	mainPageContainer := tview.NewFlex().
+		SetDirection(tview.FlexRow)
 
 	textList := tview.NewList().
 		SetHighlightFullLine(true).
@@ -55,15 +65,13 @@ func NewAppView(app *tview.Application, config *config.Config) *AppView {
 			textList.SetBorderColor(tcell.ColorAquaMarine)
 		})
 
-	mainContent.
-		SetBorder(true).
-		SetTitle(" Main Content ")
-
-	sideBar := tview.NewFlex().SetDirection(tview.FlexRow)
-
 	textList.
 		SetBorder(true).
 		SetTitle(" Applications ")
+
+	mainContentContainer.
+		SetBorder(true).
+		SetTitle(" Main Content ")
 
 	bsBox := tview.NewBox().
 		SetBorder(true).
@@ -77,37 +85,47 @@ func NewAppView(app *tview.Application, config *config.Config) *AppView {
 			bsBox.SetBorderColor(tview.Styles.BorderColor)
 		})
 
-	mainTable := tview.NewTable()
-
 	tableStyle := tcell.StyleDefault.
 		Background(config.Background).
 		Foreground(tcell.ColorDarkSlateGray).
 		Bold(true)
 
 	mainTable.SetSelectedStyle(tableStyle)
-	mainTable.SetTitle(" Main Content ")
 	mainTable.SetSelectable(true, false)
 
 	sideBar.
 		AddItem(textList, 0, 1, true).
 		AddItem(bsBox, 0, 1, true)
 
-	mainContent.
+	commandBar.
+		AddItem(searchInput, 0, 1, true)
+
+	mainContentContainer.
 		AddItem(mainTable, 0, 1, true).
 		SetBorder(true)
 
 	mainPage.
 		AddItem(sideBar, 0, 1, true).
-		AddItem(mainContent, 0, 3, false)
+		AddItem(mainContentContainer, 0, 3, false)
+
+	// command bar stuff
+	commandBar.
+		SetBorder(true)
+
+	mainPageContainer.
+		AddItem(mainPage, 0, 1, true)
 
 	return &AppView{
-		App:         app,
-		MainPage:    mainPage,
-		SideBar:     sideBar,
-		AppList:     textList,
-		MainContent: mainContent,
-		MainTable:   mainTable,
-		StatusBox:   bsBox,
+		App:                  app,
+		MainPage:             mainPage,
+		SideBar:              sideBar,
+		AppList:              textList,
+		MainContentContainer: mainContentContainer,
+		MainPageContainer:    mainPageContainer,
+		SearchInput:          searchInput,
+		CommandBar:           commandBar,
+		MainTable:            mainTable,
+		StatusBox:            bsBox,
 	}
 }
 
@@ -123,6 +141,18 @@ func (v *AppView) UpdateAppList(apps []argocd.ApplicationItem) {
 		name := fmt.Sprintf("%s%s", colorTag, app.Metadata.Name)
 		v.AppList.AddItem(name, "", 0, nil)
 	}
+}
+
+func (v *AppView) ToggleCommandBar() {
+	if v.MainPageContainer.GetItemCount() > 1 {
+		v.MainPageContainer.Clear()
+		v.MainPageContainer.AddItem(v.MainPage, 0, 1, false)
+		return
+	}
+
+	v.MainPageContainer.Clear()
+	v.MainPageContainer.AddItem(v.CommandBar, 3, 0, true)
+	v.MainPageContainer.AddItem(v.MainPage, 0, 1, false)
 }
 
 func (v *AppView) HorizontallyScrollMainTable(direction int) {
