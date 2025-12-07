@@ -125,6 +125,22 @@ func (v *AppView) UpdateAppList(apps []argocd.ApplicationItem) {
 	}
 }
 
+func (v *AppView) HorizontallyScrollMainTable(direction int) {
+	row, col := v.MainTable.GetSelection()
+	offset := 1
+	newCol := col + offset*direction
+
+	if newCol == 0 {
+		newCol++
+	}
+
+	if newCol == v.MainTable.GetRowCount() {
+		return
+	}
+
+	v.MainTable.Select(row, newCol)
+}
+
 func (v *AppView) ScrollMainContent(direction int) {
 	row, _ := v.MainTable.GetSelection()
 	offset := 1
@@ -168,11 +184,6 @@ func (v *AppView) UpdateMainContent(resources []argocd.ApplicationNode) {
 		return
 	}
 
-	type TableCell struct {
-		ColumnName  string
-		ColumnValue string
-	}
-
 	columns := []string{"Name", "Kind", "Health", "Namespace", "Version", "Resource Version", "Images"}
 
 	for i, column := range columns {
@@ -187,6 +198,18 @@ func (v *AppView) UpdateMainContent(resources []argocd.ApplicationNode) {
 
 		if manifest.Health.Status == string(argocd.StatusDegraded) {
 			color = tcell.ColorRed
+		}
+
+		if manifest.Health.Status == string(argocd.StatusHealthy) {
+			color = tcell.ColorLightGreen
+		}
+
+		if manifest.Health.Status == string(argocd.StatusProgressing) {
+			color = tcell.ColorLightBlue
+		}
+
+		if manifest.Health.Status == string(argocd.StatusMissing) {
+			color = tcell.ColorLightYellow
 		}
 
 		for i, column := range columns {
@@ -218,11 +241,11 @@ func (v *AppView) UpdateMainContent(resources []argocd.ApplicationNode) {
 				SetTextColor(color).
 				SetAlign(tview.AlignLeft)
 
-			if manifest.Health.Status == string(argocd.StatusDegraded) {
+			if manifest.Health.Status != "" {
 				tableCell.
 					SetSelectedStyle(
 						tcell.StyleDefault.
-							Background(tcell.ColorRed).
+							Background(color).
 							Foreground(tcell.ColorDarkSlateGray).
 							Bold(true),
 					)

@@ -76,6 +76,16 @@ func (c *AppController) SetupEventHandlers() {
 				return nil
 			}
 
+			if event.Rune() == 'l' {
+				c.View.HorizontallyScrollMainTable(1)
+				return nil
+			}
+
+			if event.Rune() == 'h' {
+				c.View.HorizontallyScrollMainTable(-1)
+				return nil
+			}
+
 			if event.Rune() == 'K' {
 				c.View.ScrollMainContent(-1)
 				return nil
