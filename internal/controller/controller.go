@@ -26,7 +26,7 @@ func (c *AppController) SetupEventHandlers() {
 
 		c.Model.LoadResources(appName)
 
-		c.View.UpdateMainContent(c.Model.SelectedAppResources)
+		c.View.UpdateMainContent(c.Model.SelectedAppResources, "")
 		c.View.UpdateTitles(index, c.Model.PrevIndex, appName, c.Model.PrevText)
 
 		c.Model.PrevText = mainText
@@ -173,7 +173,7 @@ func (c *AppController) SetupEventHandlers() {
 		if event.Key() == tcell.KeyEnter {
 			c.Model.SearchString = c.View.SearchInput.GetText()
 			c.View.ToggleCommandBar()
-			c.View.SetSearchTitle(c.Model.SearchString)
+			c.View.UpdateMainContent(c.Model.SelectedAppResources, c.Model.SearchString)
 			return nil
 		}
 

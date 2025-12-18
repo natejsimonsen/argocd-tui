@@ -170,10 +170,6 @@ func (v *AppView) ClearSearch() {
 	v.RemoveSearchBar()
 }
 
-func (v *AppView) SetSearchTitle(search string) {
-	v.MainContentContainer.SetTitle(fmt.Sprintf(" Main Page - %s ", search))
-}
-
 func (v *AppView) HorizontallyScrollMainTable(direction int) {
 	row, col := v.MainTable.GetSelection()
 	offset := 1
@@ -222,7 +218,7 @@ func (v *AppView) PageMainContent(direction int) {
 	v.MainTable.Select(newRow, 0)
 }
 
-func (v *AppView) UpdateMainContent(resources []argocd.ApplicationNode) {
+func (v *AppView) UpdateMainContent(resources []argocd.ApplicationNode, search string) {
 	v.MainTable.Clear()
 
 	if len(resources) == 0 {
@@ -243,6 +239,10 @@ func (v *AppView) UpdateMainContent(resources []argocd.ApplicationNode) {
 	}
 
 	for row, manifest := range resources {
+		if search != "" && !strings.Contains(search, manifest.Name) {
+			continue
+		}
+
 		color := tcell.ColorWhiteSmoke
 
 		if manifest.Health.Status == string(argocd.StatusDegraded) {
