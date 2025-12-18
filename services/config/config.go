@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -19,8 +20,11 @@ type Config struct {
 }
 
 func NewConfig() *Config {
-	// TODO: make this load from home dir
-	path := "/home/nate/.config/argocd-tui/config.yaml"
+	home, err := os.UserHomeDir()
+	if err != nil {
+		log.Fatalf("Error loading os home dir: %v", err)
+	}
+	path := fmt.Sprintf("%s/.config/argocd-tui/config.yaml", home)
 
 	fileBytes, err := os.ReadFile(path)
 	if err != nil {
