@@ -66,7 +66,6 @@ func (c *AppController) SetupEventHandlers() {
 		return event
 	})
 
-	// TODO: improve tab / shift tab key logic
 	c.View.SideBar.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		isShiftPressed := event.Modifiers()&tcell.ModShift != 0
 
@@ -127,6 +126,7 @@ func (c *AppController) SetupEventHandlers() {
 			return nil
 		}
 
+		// TODO: improve tab / shift tab key logic
 		if event.Key() == tcell.KeyTab {
 			c.View.App.SetFocus(c.View.StatusBox)
 			return nil
@@ -134,6 +134,12 @@ func (c *AppController) SetupEventHandlers() {
 
 		if event.Key() == tcell.KeyBacktab {
 			c.View.App.SetFocus(c.View.AppList)
+			return nil
+		}
+
+		if event.Key() == tcell.KeyEsc {
+			c.Model.SearchString = ""
+			c.View.ClearSearch()
 			return nil
 		}
 
@@ -146,6 +152,29 @@ func (c *AppController) SetupEventHandlers() {
 				c.View.App.Stop()
 				return nil
 			}
+		}
+
+		return event
+	})
+
+	c.View.CommandBar.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Key() == tcell.KeyRune {
+			if event.Rune() == '/' {
+				c.View.ToggleCommandBar()
+				return nil
+			}
+		}
+
+		if event.Key() == tcell.KeyEsc {
+			c.View.ToggleCommandBar()
+			return nil
+		}
+
+		if event.Key() == tcell.KeyEnter {
+			c.Model.SearchString = c.View.SearchInput.GetText()
+			c.View.ToggleCommandBar()
+			c.View.SetSearchTitle(c.Model.SearchString)
+			return nil
 		}
 
 		return event

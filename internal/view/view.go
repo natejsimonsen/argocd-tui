@@ -143,16 +143,35 @@ func (v *AppView) UpdateAppList(apps []argocd.ApplicationItem) {
 	}
 }
 
-func (v *AppView) ToggleCommandBar() {
-	if v.MainPageContainer.GetItemCount() > 1 {
-		v.MainPageContainer.Clear()
-		v.MainPageContainer.AddItem(v.MainPage, 0, 1, false)
-		return
-	}
+func (v *AppView) RemoveSearchBar() {
+	v.MainPageContainer.Clear()
+	v.MainPageContainer.AddItem(v.MainPage, 0, 1, false)
+	v.App.SetFocus(v.AppList)
+	v.SearchInput.SetText("")
+	v.MainContentContainer.SetTitle(" Main Page ")
+}
 
+func (v *AppView) AddSearchBar() {
 	v.MainPageContainer.Clear()
 	v.MainPageContainer.AddItem(v.CommandBar, 3, 0, true)
 	v.MainPageContainer.AddItem(v.MainPage, 0, 1, false)
+	v.App.SetFocus(v.CommandBar)
+}
+
+func (v *AppView) ToggleCommandBar() {
+	if v.MainPageContainer.GetItemCount() > 1 {
+		v.RemoveSearchBar()
+		return
+	}
+	v.AddSearchBar()
+}
+
+func (v *AppView) ClearSearch() {
+	v.RemoveSearchBar()
+}
+
+func (v *AppView) SetSearchTitle(search string) {
+	v.MainContentContainer.SetTitle(fmt.Sprintf(" Main Page - %s ", search))
 }
 
 func (v *AppView) HorizontallyScrollMainTable(direction int) {
