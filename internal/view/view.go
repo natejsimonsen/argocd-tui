@@ -218,7 +218,7 @@ func (v *AppView) PageMainContent(direction int) {
 	v.MainTable.Select(newRow, 0)
 }
 
-func (v *AppView) UpdateMainContent(resources []argocd.ApplicationNode, search string) {
+func (v *AppView) UpdateMainContent(resources []argocd.ApplicationNode) {
 	v.MainTable.Clear()
 
 	if len(resources) == 0 {
@@ -239,10 +239,6 @@ func (v *AppView) UpdateMainContent(resources []argocd.ApplicationNode, search s
 	}
 
 	for row, manifest := range resources {
-		if search != "" && !strings.Contains(search, manifest.Name) {
-			continue
-		}
-
 		color := tcell.ColorWhiteSmoke
 
 		if manifest.Health.Status == string(argocd.StatusDegraded) {
