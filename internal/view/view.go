@@ -191,11 +191,11 @@ func (v *AppView) ScrollMainContent(direction int) {
 	offset := 1
 	newRow := row + offset*direction
 
-	if newRow == 0 {
-		newRow++
+	if newRow <= 0 {
+		newRow = 1
 	}
 
-	if newRow == v.MainTable.GetRowCount() {
+	if newRow >= v.MainTable.GetRowCount() {
 		return
 	}
 
