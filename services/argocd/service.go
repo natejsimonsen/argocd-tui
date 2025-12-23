@@ -15,8 +15,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const ARGOCD_SERVER = "http://localhost:8080"
-
 type Service struct {
 	Logger *logrus.Logger
 	Client *http.Client
@@ -50,9 +48,10 @@ func NewService(logger *logrus.Logger) *Service {
 }
 
 func (s *Service) Get(path string) (*http.Response, error) {
+	serverURL := os.Getenv("ARGOCD_SERVER_URL")
 	req, err := http.NewRequest(
 		"GET",
-		fmt.Sprintf("%s/api/v1/%s", ARGOCD_SERVER, path),
+		fmt.Sprintf("%s/api/v1/%s", serverURL, path),
 		nil,
 	)
 	if err != nil {
@@ -73,6 +72,7 @@ func (s *Service) Get(path string) (*http.Response, error) {
 }
 
 func Login(client http.Client) (string, error) {
+	serverURL := os.Getenv("ARGOCD_SERVER_URL")
 	loginBody := map[string]string{
 		"password": os.Getenv("ARGOCD_PASSWORD"),
 		"username": os.Getenv("ARGOCD_USERNAME"),
@@ -85,7 +85,7 @@ func Login(client http.Client) (string, error) {
 
 	loginBodyReader := bytes.NewBuffer(jsonLoginBody)
 
-	response, err := client.Post(fmt.Sprintf("%s/api/v1/session", ARGOCD_SERVER), "application/json", loginBodyReader)
+	response, err := client.Post(fmt.Sprintf("%s/api/v1/session", serverURL), "application/json", loginBodyReader)
 	if err != nil {
 		log.Fatalf("Error performing POST request for exchange token: %v", err)
 		return "", err
