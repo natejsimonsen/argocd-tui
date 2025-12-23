@@ -51,6 +51,9 @@ func NewAppView(app *tview.Application, config *config.Config) *AppView {
 	mainPageContainer := tview.NewFlex().
 		SetDirection(tview.FlexRow)
 
+	searchInput.SetFieldBackgroundColor(tcell.ColorDefault).
+		SetBorder(false)
+
 	textList := tview.NewList().
 		SetHighlightFullLine(true).
 		ShowSecondaryText(false).
@@ -108,7 +111,6 @@ func NewAppView(app *tview.Application, config *config.Config) *AppView {
 		AddItem(sideBar, 0, 1, true).
 		AddItem(mainContentContainer, 0, 3, false)
 
-	// command bar stuff
 	commandBar.
 		SetBorder(true)
 
