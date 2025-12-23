@@ -203,15 +203,17 @@ func (v *AppView) ScrollMainContent(direction int) {
 }
 
 func (v *AppView) PageMainContent(direction int) {
+	rowNums := v.MainTable.GetRowCount()
 	row, _ := v.MainTable.GetSelection()
-	offset := 1
+	offset := rowNums / 2
 	newRow := row + offset*direction
 
-	if newRow == 0 {
-		newRow++
+	if newRow <= 0 {
+		newRow = 1
 	}
 
-	if newRow == v.MainTable.GetRowCount() {
+	if newRow >= rowNums {
+		v.MainTable.Select(rowNums-1, 0)
 		return
 	}
 
