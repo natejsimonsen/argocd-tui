@@ -141,6 +141,11 @@ func (c *AppController) SetupEventHandlers() {
 		}
 
 		if event.Key() == tcell.KeyEsc {
+			if c.Model.SearchString != "" {
+				c.Model.LoadResources(c.Model.SelectedAppName)
+				c.View.UpdateMainContent(c.Model.SelectedAppResources)
+			}
+
 			c.Model.SearchString = ""
 			c.View.ClearSearch()
 			return nil
@@ -176,24 +181,25 @@ func (c *AppController) SetupEventHandlers() {
 		if event.Key() == tcell.KeyEnter {
 			c.Model.SearchString = c.View.SearchInput.GetText()
 			c.View.ToggleCommandBar()
-
-			// search through the list of resources
-			var filteredResources []argocd.ApplicationNode
-
-			for _, app := range c.Model.SelectedAppResources {
-				if strings.Contains(app.Name, c.Model.SearchString) {
-					filteredResources = append(filteredResources, app)
-				}
-			}
-
-			c.Model.SelectedAppResources = filteredResources
-
+			c.Model.SelectedAppResources = c.SearchContent(c.Model.SearchString)
 			c.View.UpdateMainContent(c.Model.SelectedAppResources)
 			return nil
 		}
 
 		return event
 	})
+}
+
+func (c *AppController) SearchContent(search string) []argocd.ApplicationNode {
+	var filteredResources []argocd.ApplicationNode
+
+	for _, app := range c.Model.SelectedAppResources {
+		if strings.Contains(app.Name, c.Model.SearchString) {
+			filteredResources = append(filteredResources, app)
+		}
+	}
+
+	return filteredResources
 }
 
 func (c *AppController) Start() error {
