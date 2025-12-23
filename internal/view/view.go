@@ -51,6 +51,9 @@ func NewAppView(app *tview.Application, config *config.Config) *AppView {
 	mainPageContainer := tview.NewFlex().
 		SetDirection(tview.FlexRow)
 
+	searchInput.SetFieldBackgroundColor(tcell.ColorDefault).
+		SetBorder(false)
+
 	textList := tview.NewList().
 		SetHighlightFullLine(true).
 		ShowSecondaryText(false).
@@ -108,7 +111,6 @@ func NewAppView(app *tview.Application, config *config.Config) *AppView {
 		AddItem(sideBar, 0, 1, true).
 		AddItem(mainContentContainer, 0, 3, false)
 
-	// command bar stuff
 	commandBar.
 		SetBorder(true)
 
@@ -148,7 +150,7 @@ func (v *AppView) RemoveSearchBar() {
 	v.MainPageContainer.AddItem(v.MainPage, 0, 1, false)
 	v.App.SetFocus(v.AppList)
 	v.SearchInput.SetText("")
-	v.MainContentContainer.SetTitle(" Main Page ")
+	v.MainContentContainer.SetTitle(" Main Content ")
 }
 
 func (v *AppView) AddSearchBar() {
@@ -186,16 +188,21 @@ func (v *AppView) HorizontallyScrollMainTable(direction int) {
 	v.MainTable.Select(row, newCol)
 }
 
+func (v *AppView) SetSearchTitle(search string) {
+	title := strings.Split(v.MainContentContainer.GetTitle(), "/")[0]
+	v.MainContentContainer.SetTitle(fmt.Sprintf("%s / %s ", title, search))
+}
+
 func (v *AppView) ScrollMainContent(direction int) {
 	row, _ := v.MainTable.GetSelection()
 	offset := 1
 	newRow := row + offset*direction
 
-	if newRow == 0 {
-		newRow++
+	if newRow <= 0 {
+		newRow = 1
 	}
 
-	if newRow == v.MainTable.GetRowCount() {
+	if newRow >= v.MainTable.GetRowCount() {
 		return
 	}
 
@@ -203,15 +210,17 @@ func (v *AppView) ScrollMainContent(direction int) {
 }
 
 func (v *AppView) PageMainContent(direction int) {
+	rowNums := v.MainTable.GetRowCount()
 	row, _ := v.MainTable.GetSelection()
-	offset := 1
+	offset := rowNums / 2
 	newRow := row + offset*direction
 
-	if newRow == 0 {
-		newRow++
+	if newRow <= 0 {
+		newRow = 1
 	}
 
-	if newRow == v.MainTable.GetRowCount() {
+	if newRow >= rowNums {
+		v.MainTable.Select(rowNums-1, 0)
 		return
 	}
 
@@ -260,25 +269,20 @@ func (v *AppView) UpdateMainContent(resources []argocd.ApplicationNode) {
 		for i, column := range columns {
 			value := ""
 
-			if column == "Name" {
+			switch column {
+			case "Name":
 				value = manifest.Name
-			}
-			if column == "Kind" {
+			case "Kind":
 				value = manifest.Kind
-			}
-			if column == "Health" {
+			case "Health":
 				value = manifest.Health.Status
-			}
-			if column == "Namespace" {
+			case "Namespace":
 				value = manifest.Namespace
-			}
-			if column == "Version" {
+			case "Version":
 				value = manifest.Version
-			}
-			if column == "Resource Version" {
+			case "Resource Version":
 				value = manifest.ResourceVersion
-			}
-			if column == "Images" {
+			case "Images":
 				value = strings.Join(manifest.Images, ", ")
 			}
 
