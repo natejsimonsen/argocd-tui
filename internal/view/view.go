@@ -148,7 +148,7 @@ func (v *AppView) RemoveSearchBar() {
 	v.MainPageContainer.AddItem(v.MainPage, 0, 1, false)
 	v.App.SetFocus(v.AppList)
 	v.SearchInput.SetText("")
-	v.MainContentContainer.SetTitle(" Main Page ")
+	v.MainContentContainer.SetTitle(" Main Content ")
 }
 
 func (v *AppView) AddSearchBar() {
@@ -184,6 +184,11 @@ func (v *AppView) HorizontallyScrollMainTable(direction int) {
 	}
 
 	v.MainTable.Select(row, newCol)
+}
+
+func (v *AppView) SetSearchTitle(search string) {
+	title := strings.Split(v.MainContentContainer.GetTitle(), "/")[0]
+	v.MainContentContainer.SetTitle(fmt.Sprintf("%s / %s ", title, search))
 }
 
 func (v *AppView) ScrollMainContent(direction int) {
@@ -262,25 +267,20 @@ func (v *AppView) UpdateMainContent(resources []argocd.ApplicationNode) {
 		for i, column := range columns {
 			value := ""
 
-			if column == "Name" {
+			switch column {
+			case "Name":
 				value = manifest.Name
-			}
-			if column == "Kind" {
+			case "Kind":
 				value = manifest.Kind
-			}
-			if column == "Health" {
+			case "Health":
 				value = manifest.Health.Status
-			}
-			if column == "Namespace" {
+			case "Namespace":
 				value = manifest.Namespace
-			}
-			if column == "Version" {
+			case "Version":
 				value = manifest.Version
-			}
-			if column == "Resource Version" {
+			case "Resource Version":
 				value = manifest.ResourceVersion
-			}
-			if column == "Images" {
+			case "Images":
 				value = strings.Join(manifest.Images, ", ")
 			}
 

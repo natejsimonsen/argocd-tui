@@ -143,6 +143,7 @@ func (c *AppController) SetupEventHandlers() {
 		if event.Key() == tcell.KeyEsc {
 			if c.Model.SearchString != "" {
 				c.Model.LoadResources(c.Model.SelectedAppName)
+				c.View.SetSearchTitle("")
 				c.View.UpdateMainContent(c.Model.SelectedAppResources)
 			}
 
@@ -181,6 +182,7 @@ func (c *AppController) SetupEventHandlers() {
 		if event.Key() == tcell.KeyEnter {
 			c.Model.SearchString = c.View.SearchInput.GetText()
 			c.View.ToggleCommandBar()
+			c.View.SetSearchTitle(c.Model.SearchString)
 			c.Model.SelectedAppResources = c.FilterContent(c.Model.SearchString)
 			c.View.UpdateMainContent(c.Model.SelectedAppResources)
 			return nil
