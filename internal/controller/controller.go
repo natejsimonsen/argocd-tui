@@ -181,7 +181,7 @@ func (c *AppController) SetupEventHandlers() {
 		if event.Key() == tcell.KeyEnter {
 			c.Model.SearchString = c.View.SearchInput.GetText()
 			c.View.ToggleCommandBar()
-			c.Model.SelectedAppResources = c.SearchContent(c.Model.SearchString)
+			c.Model.SelectedAppResources = c.FilterContent(c.Model.SearchString)
 			c.View.UpdateMainContent(c.Model.SelectedAppResources)
 			return nil
 		}
@@ -190,7 +190,7 @@ func (c *AppController) SetupEventHandlers() {
 	})
 }
 
-func (c *AppController) SearchContent(search string) []argocd.ApplicationNode {
+func (c *AppController) FilterContent(search string) []argocd.ApplicationNode {
 	var filteredResources []argocd.ApplicationNode
 
 	for _, app := range c.Model.SelectedAppResources {
