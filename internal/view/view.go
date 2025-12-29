@@ -183,7 +183,7 @@ func (v *AppView) ToggleHelp(commands map[model.Context]map[rune]*model.Command)
 
 	for ctx, cmdMap := range commands {
 		for trigger, cmd := range cmdMap {
-			v.HelpPage.AddItem(fmt.Sprintf("%c - %s - %s", trigger, ctx, cmd), "", 0, nil)
+			v.HelpPage.AddItem(fmt.Sprintf("%c - %-10s - %-10s", trigger, ctx, cmd), "", 0, nil)
 		}
 	}
 }

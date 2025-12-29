@@ -21,7 +21,7 @@ type Command struct {
 }
 
 func (c *Command) String() string {
-	return fmt.Sprintf("%s %s", c.Context, c.Description)
+	return fmt.Sprintf("%-10s - %s", c.Context, c.Description)
 }
 
 type CommandModel struct {

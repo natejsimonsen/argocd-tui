@@ -87,6 +87,71 @@ func (c *AppController) AddCommands() {
 	)
 
 	// Help Commands
+
+	// Main Page Commands
+
+	c.CommandModel.Add(
+		'J',
+		model.MainPage,
+		"Scrolls one item down",
+		func() {
+			c.View.ScrollMainContent(1)
+		},
+	)
+
+	c.CommandModel.Add(
+		'l',
+		model.MainPage,
+		"WIP for horizontal scrolling",
+		func() {
+			c.View.HorizontallyScrollMainTable(1)
+		},
+	)
+
+	c.CommandModel.Add(
+		'h',
+		model.MainPage,
+		"WIP for horizontal scrolling",
+		func() {
+			c.View.HorizontallyScrollMainTable(-1)
+		},
+	)
+
+	c.CommandModel.Add(
+		'K',
+		model.MainPage,
+		"Scroll up",
+		func() {
+			c.View.ScrollMainContent(-1)
+		},
+	)
+
+	c.CommandModel.Add(
+		'D',
+		model.MainPage,
+		"Page Down",
+		func() {
+			c.View.PageMainContent(1)
+		},
+	)
+
+	c.CommandModel.Add(
+		'U',
+		model.MainPage,
+		"Page Up",
+		func() {
+			c.View.PageMainContent(-1)
+		},
+	)
+
+	c.CommandModel.Add(
+		'/',
+		model.MainPage,
+		"Toggle Search Bar",
+		func() {
+			c.View.ToggleCommandBar()
+		},
+	)
 }
 
 func (c *AppController) SetupEventHandlers() {
@@ -132,38 +197,8 @@ func (c *AppController) SetupEventHandlers() {
 		isShiftPressed := event.Modifiers()&tcell.ModShift != 0
 
 		if event.Key() == tcell.KeyRune {
-			if event.Rune() == 'J' {
-				c.View.ScrollMainContent(1)
-				return nil
-			}
-
-			if event.Rune() == 'l' {
-				c.View.HorizontallyScrollMainTable(1)
-				return nil
-			}
-
-			if event.Rune() == 'h' {
-				c.View.HorizontallyScrollMainTable(-1)
-				return nil
-			}
-
-			if event.Rune() == 'K' {
-				c.View.ScrollMainContent(-1)
-				return nil
-			}
-
-			if event.Rune() == 'D' {
-				c.View.PageMainContent(1)
-				return nil
-			}
-
-			if event.Rune() == 'U' {
-				c.View.PageMainContent(-1)
-				return nil
-			}
-
-			if event.Rune() == '/' {
-				c.View.ToggleCommandBar()
+			if cmd, ok := c.CommandModel.Commands[model.MainPage][event.Rune()]; ok {
+				cmd.Handler()
 				return nil
 			}
 		}
