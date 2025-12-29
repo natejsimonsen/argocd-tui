@@ -11,18 +11,64 @@ import (
 )
 
 type AppController struct {
-	Model *model.AppModel
-	View  *view.AppView
+	Model        *model.AppModel
+	CommandModel *model.CommandModel
+	View         *view.AppView
 }
 
-func NewAppController(m *model.AppModel, v *view.AppView) *AppController {
+func NewAppController(m *model.AppModel, cm *model.CommandModel, v *view.AppView) *AppController {
 	return &AppController{
-		Model: m,
-		View:  v,
+		Model:        m,
+		CommandModel: cm,
+		View:         v,
 	}
 }
 
+func (c *AppController) AddGlobalCommands() {
+	gCmd := model.Command{
+		Description: "Goes to the top of the list",
+		Handler: func() {
+			c.View.AppList.SetCurrentItem(0)
+		},
+	}
+	c.CommandModel.Add('g', gCmd)
+
+	GCmd := model.Command{
+		Description: "Goes to the bottom of the list",
+		Handler: func() {
+			c.View.AppList.SetCurrentItem(c.View.AppList.GetItemCount() - 1)
+		},
+	}
+	c.CommandModel.Add('G', GCmd)
+
+	jCmd := model.Command{
+		Description: "Scrolls down one row",
+		Handler: func() {
+			if c.View.AppList.GetCurrentItem()+1 == c.View.AppList.GetItemCount() {
+				c.View.AppList.SetCurrentItem(0)
+			}
+
+			c.View.AppList.SetCurrentItem(c.View.AppList.GetCurrentItem() + 1)
+		},
+	}
+	c.CommandModel.Add('j', jCmd)
+
+	kCmd := model.Command{
+		Description: "Scrolls up one row",
+		Handler: func() {
+			if c.View.AppList.GetCurrentItem() == 0 {
+				c.View.AppList.SetCurrentItem(-1)
+			}
+
+			c.View.AppList.SetCurrentItem(c.View.AppList.GetCurrentItem() - 1)
+		},
+	}
+	c.CommandModel.Add('k', kCmd)
+}
+
 func (c *AppController) SetupEventHandlers() {
+	c.AddGlobalCommands()
+
 	// application on change
 	c.View.AppList.SetChangedFunc(func(index int, mainText, secondaryText string, shortcut rune) {
 		appName := utils.StripTags(mainText)
@@ -39,30 +85,9 @@ func (c *AppController) SetupEventHandlers() {
 	// application vim-like navigation
 	c.View.AppList.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyRune {
-			if event.Rune() == 'g' {
-				c.View.AppList.SetCurrentItem(0)
-			}
-
-			if event.Rune() == 'G' {
-				c.View.AppList.SetCurrentItem(c.View.AppList.GetItemCount() - 1)
-			}
-
-			if event.Rune() == 'k' {
-				if c.View.AppList.GetCurrentItem() == 0 {
-					c.View.AppList.SetCurrentItem(-1)
-					return event
-				}
-
-				c.View.AppList.SetCurrentItem(c.View.AppList.GetCurrentItem() - 1)
-			}
-
-			if event.Rune() == 'j' {
-				if c.View.AppList.GetCurrentItem()+1 == c.View.AppList.GetItemCount() {
-					c.View.AppList.SetCurrentItem(0)
-					return event
-				}
-
-				c.View.AppList.SetCurrentItem(c.View.AppList.GetCurrentItem() + 1)
+			if cmd, ok := c.CommandModel.Commands[event.Rune()]; ok {
+				cmd.Handler()
+				return nil
 			}
 		}
 
