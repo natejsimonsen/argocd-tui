@@ -11,6 +11,7 @@ const (
 	Global   = "Global"
 	AppList  = "AppList"
 	MainPage = "MainPage"
+	Help     = "Help"
 )
 
 type Command struct {

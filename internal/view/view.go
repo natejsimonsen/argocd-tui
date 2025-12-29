@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"example.com/main/internal/model"
 	"example.com/main/services/argocd"
 	"example.com/main/services/config"
 	"github.com/gdamore/tcell/v2"
@@ -17,7 +18,8 @@ type AppView struct {
 	MainPage             *tview.Flex
 	SideBar              *tview.Flex
 	AppList              *tview.List
-	HelpPage             tview.Primitive
+	HelpModal            tview.Primitive
+	HelpPage             *tview.List
 	CommandBar           *tview.Flex
 	SearchInput          *tview.InputField
 	MainContentContainer *tview.Flex
@@ -129,15 +131,17 @@ func NewAppView(app *tview.Application, config *config.Config) *AppView {
 			AddItem(nil, 0, 1, false)
 	}
 
-	box := tview.NewBox().
+	helpPage := tview.NewList()
+
+	helpPage.
 		SetBorder(true).
 		SetTitle("Help Page")
 
-	helpPage := modal(box, 40, 40)
+	helpModal := modal(helpPage, 80, 40)
 
 	pages := tview.NewPages().
 		AddPage("main page", mainPageContainer, true, true).
-		AddPage("help page", helpPage, true, false)
+		AddPage("help page", helpModal, true, false)
 
 	return &AppView{
 		App:                  app,
@@ -145,6 +149,7 @@ func NewAppView(app *tview.Application, config *config.Config) *AppView {
 		MainPage:             mainPage,
 		SideBar:              sideBar,
 		HelpPage:             helpPage,
+		HelpModal:            helpModal,
 		AppList:              textList,
 		MainContentContainer: mainContentContainer,
 		MainPageContainer:    mainPageContainer,
@@ -153,6 +158,14 @@ func NewAppView(app *tview.Application, config *config.Config) *AppView {
 		MainTable:            mainTable,
 		StatusBox:            bsBox,
 	}
+}
+
+func (v *AppView) ShowHelp(commands map[rune]*model.Command) {
+	v.Pages.ShowPage("help page")
+
+	// for trigger, cmd := range commands {
+	//
+	// }
 }
 
 func (v *AppView) UpdateTitles(index, prevIndex int, text, prevText string) {

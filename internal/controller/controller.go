@@ -78,11 +78,20 @@ func (c *AppController) AddCommands() {
 	}
 	c.CommandModel.Add('q', quitCmd)
 
+	closeHelpCmd := model.Command{
+		Description: "Closes the help window",
+		Context:     model.Help,
+		Handler: func() {
+			c.View.Pages.HidePage("help page")
+		},
+	}
+	c.CommandModel.Add('c', closeHelpCmd)
+
 	helpCmd := model.Command{
 		Description: "Displays a help page",
 		Context:     model.App,
 		Handler: func() {
-			// c.View.ShowHelp(model.CommandModel.Commands)
+			c.View.ShowHelp(c.CommandModel.Commands)
 		},
 	}
 	c.CommandModel.Add('?', helpCmd)
@@ -108,6 +117,17 @@ func (c *AppController) SetupEventHandlers() {
 	c.View.AppList.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyRune {
 			if cmd, ok := c.CommandModel.Commands[event.Rune()]; ok && cmd.Context == model.AppList {
+				cmd.Handler()
+				return nil
+			}
+		}
+
+		return event
+	})
+
+	c.View.HelpPage.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Key() == tcell.KeyRune {
+			if cmd, ok := c.CommandModel.Commands[event.Rune()]; ok && cmd.Context == model.Help {
 				cmd.Handler()
 				return nil
 			}
