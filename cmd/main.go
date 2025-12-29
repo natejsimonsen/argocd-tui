@@ -15,10 +15,12 @@ func main() {
 	l := logger.SetupLogger()
 	argocdSvc := argocd.NewService(l)
 	appModel := model.NewAppModel(l, argocdSvc)
+	commandModel := model.NewCommandModel()
 	config := config.NewConfig()
 	appView := view.NewAppView(app, config)
 	appController := controller.NewAppController(
 		appModel,
+		commandModel,
 		appView,
 	)
 

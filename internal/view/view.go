@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"example.com/main/internal/model"
 	"example.com/main/services/argocd"
 	"example.com/main/services/config"
 	"github.com/gdamore/tcell/v2"
@@ -12,10 +13,13 @@ import (
 
 type AppView struct {
 	App                  *tview.Application
+	Pages                *tview.Pages
 	Config               config.Config
 	MainPage             *tview.Flex
 	SideBar              *tview.Flex
 	AppList              *tview.List
+	HelpModal            tview.Primitive
+	HelpPage             *tview.List
 	CommandBar           *tview.Flex
 	SearchInput          *tview.InputField
 	MainContentContainer *tview.Flex
@@ -117,10 +121,47 @@ func NewAppView(app *tview.Application, config *config.Config) *AppView {
 	mainPageContainer.
 		AddItem(mainPage, 0, 1, true)
 
+	modal := func(p tview.Primitive, width, height int) tview.Primitive {
+		return tview.NewFlex().
+			AddItem(nil, 0, 1, false).
+			AddItem(tview.NewFlex().SetDirection(tview.FlexRow).
+				AddItem(nil, 0, 1, false).
+				AddItem(p, height, 1, true).
+				AddItem(nil, 0, 1, false), width, 1, true).
+			AddItem(nil, 0, 1, false)
+	}
+
+	helpPage := tview.NewList().
+		SetHighlightFullLine(true).
+		ShowSecondaryText(false).
+		SetSelectedBackgroundColor(tcell.ColorAqua).
+		SetSelectedTextColor(tcell.ColorBlack)
+
+	helpPage.
+		SetBorder(true).
+		SetTitle("Help Page")
+
+	helpPage.
+		SetBlurFunc(func() {
+			textList.SetBorderColor(tview.Styles.BorderColor)
+		}).
+		SetFocusFunc(func() {
+			textList.SetBorderColor(tcell.ColorAquaMarine)
+		})
+
+	helpModal := modal(helpPage, 80, 40)
+
+	pages := tview.NewPages().
+		AddPage("main page", mainPageContainer, true, true).
+		AddPage("help page", helpModal, true, false)
+
 	return &AppView{
 		App:                  app,
+		Pages:                pages,
 		MainPage:             mainPage,
 		SideBar:              sideBar,
+		HelpPage:             helpPage,
+		HelpModal:            helpModal,
 		AppList:              textList,
 		MainContentContainer: mainContentContainer,
 		MainPageContainer:    mainPageContainer,
@@ -128,6 +169,22 @@ func NewAppView(app *tview.Application, config *config.Config) *AppView {
 		CommandBar:           commandBar,
 		MainTable:            mainTable,
 		StatusBox:            bsBox,
+	}
+}
+
+func (v *AppView) ToggleHelp(commands map[model.Context]map[rune]*model.Command) {
+	if page, _ := v.Pages.GetFrontPage(); page == "help page" {
+		v.Pages.HidePage("help page")
+		v.HelpPage.Clear()
+		return
+	}
+
+	v.Pages.ShowPage("help page")
+
+	for ctx, cmdMap := range commands {
+		for trigger, cmd := range cmdMap {
+			v.HelpPage.AddItem(fmt.Sprintf("%c - %-10s - %-10s", trigger, ctx, cmd), "", 0, nil)
+		}
 	}
 }
 
