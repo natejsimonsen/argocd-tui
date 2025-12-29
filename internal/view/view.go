@@ -12,10 +12,12 @@ import (
 
 type AppView struct {
 	App                  *tview.Application
+	Pages                *tview.Pages
 	Config               config.Config
 	MainPage             *tview.Flex
 	SideBar              *tview.Flex
 	AppList              *tview.List
+	HelpPage             tview.Primitive
 	CommandBar           *tview.Flex
 	SearchInput          *tview.InputField
 	MainContentContainer *tview.Flex
@@ -117,10 +119,32 @@ func NewAppView(app *tview.Application, config *config.Config) *AppView {
 	mainPageContainer.
 		AddItem(mainPage, 0, 1, true)
 
+	modal := func(p tview.Primitive, width, height int) tview.Primitive {
+		return tview.NewFlex().
+			AddItem(nil, 0, 1, false).
+			AddItem(tview.NewFlex().SetDirection(tview.FlexRow).
+				AddItem(nil, 0, 1, false).
+				AddItem(p, height, 1, true).
+				AddItem(nil, 0, 1, false), width, 1, true).
+			AddItem(nil, 0, 1, false)
+	}
+
+	box := tview.NewBox().
+		SetBorder(true).
+		SetTitle("Help Page")
+
+	helpPage := modal(box, 40, 40)
+
+	pages := tview.NewPages().
+		AddPage("main page", mainPageContainer, true, true).
+		AddPage("help page", helpPage, true, false)
+
 	return &AppView{
 		App:                  app,
+		Pages:                pages,
 		MainPage:             mainPage,
 		SideBar:              sideBar,
+		HelpPage:             helpPage,
 		AppList:              textList,
 		MainContentContainer: mainContentContainer,
 		MainPageContainer:    mainPageContainer,

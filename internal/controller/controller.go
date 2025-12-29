@@ -24,9 +24,10 @@ func NewAppController(m *model.AppModel, cm *model.CommandModel, v *view.AppView
 	}
 }
 
-func (c *AppController) AddGlobalCommands() {
+func (c *AppController) AddCommands() {
 	gCmd := model.Command{
 		Description: "Goes to the top of the list",
+		Context:     model.AppList,
 		Handler: func() {
 			c.View.AppList.SetCurrentItem(0)
 		},
@@ -35,6 +36,7 @@ func (c *AppController) AddGlobalCommands() {
 
 	GCmd := model.Command{
 		Description: "Goes to the bottom of the list",
+		Context:     model.AppList,
 		Handler: func() {
 			c.View.AppList.SetCurrentItem(c.View.AppList.GetItemCount() - 1)
 		},
@@ -43,6 +45,7 @@ func (c *AppController) AddGlobalCommands() {
 
 	jCmd := model.Command{
 		Description: "Scrolls down one row",
+		Context:     model.AppList,
 		Handler: func() {
 			if c.View.AppList.GetCurrentItem()+1 == c.View.AppList.GetItemCount() {
 				c.View.AppList.SetCurrentItem(0)
@@ -55,6 +58,7 @@ func (c *AppController) AddGlobalCommands() {
 
 	kCmd := model.Command{
 		Description: "Scrolls up one row",
+		Context:     model.AppList,
 		Handler: func() {
 			if c.View.AppList.GetCurrentItem() == 0 {
 				c.View.AppList.SetCurrentItem(-1)
@@ -64,10 +68,28 @@ func (c *AppController) AddGlobalCommands() {
 		},
 	}
 	c.CommandModel.Add('k', kCmd)
+
+	quitCmd := model.Command{
+		Description: "Quits the application",
+		Context:     model.App,
+		Handler: func() {
+			c.View.App.Stop()
+		},
+	}
+	c.CommandModel.Add('q', quitCmd)
+
+	helpCmd := model.Command{
+		Description: "Displays a help page",
+		Context:     model.App,
+		Handler: func() {
+			// c.View.ShowHelp(model.CommandModel.Commands)
+		},
+	}
+	c.CommandModel.Add('?', helpCmd)
 }
 
 func (c *AppController) SetupEventHandlers() {
-	c.AddGlobalCommands()
+	c.AddCommands()
 
 	// application on change
 	c.View.AppList.SetChangedFunc(func(index int, mainText, secondaryText string, shortcut rune) {
@@ -85,7 +107,7 @@ func (c *AppController) SetupEventHandlers() {
 	// application vim-like navigation
 	c.View.AppList.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyRune {
-			if cmd, ok := c.CommandModel.Commands[event.Rune()]; ok {
+			if cmd, ok := c.CommandModel.Commands[event.Rune()]; ok && cmd.Context == model.AppList {
 				cmd.Handler()
 				return nil
 			}
@@ -182,12 +204,11 @@ func (c *AppController) SetupEventHandlers() {
 
 	c.View.App.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyRune {
-			if event.Rune() == 'q' {
-				c.View.App.Stop()
+			if cmd, ok := c.CommandModel.Commands[event.Rune()]; ok && cmd.Context == model.App {
+				cmd.Handler()
 				return nil
 			}
 		}
-
 		return event
 	})
 
@@ -233,6 +254,6 @@ func (c *AppController) Start() error {
 	c.SetupEventHandlers()
 	c.Model.LoadApplications()
 	c.View.UpdateAppList(c.Model.Applications)
-	c.View.App.SetRoot(c.View.MainPageContainer, true)
+	c.View.App.SetRoot(c.View.Pages, true)
 	return c.View.App.Run()
 }

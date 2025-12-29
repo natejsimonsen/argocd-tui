@@ -4,9 +4,19 @@ import (
 	"fmt"
 )
 
+type Context string
+
+const (
+	App      = "App"
+	Global   = "Global"
+	AppList  = "AppList"
+	MainPage = "MainPage"
+)
+
 type Command struct {
 	Description string
 	Handler     func()
+	Context     Context
 }
 
 func (c *Command) String() string {
