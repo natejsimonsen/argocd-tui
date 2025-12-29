@@ -131,11 +131,23 @@ func NewAppView(app *tview.Application, config *config.Config) *AppView {
 			AddItem(nil, 0, 1, false)
 	}
 
-	helpPage := tview.NewList()
+	helpPage := tview.NewList().
+		SetHighlightFullLine(true).
+		ShowSecondaryText(false).
+		SetSelectedBackgroundColor(tcell.ColorAqua).
+		SetSelectedTextColor(tcell.ColorBlack)
 
 	helpPage.
 		SetBorder(true).
 		SetTitle("Help Page")
+
+	helpPage.
+		SetBlurFunc(func() {
+			textList.SetBorderColor(tview.Styles.BorderColor)
+		}).
+		SetFocusFunc(func() {
+			textList.SetBorderColor(tcell.ColorAquaMarine)
+		})
 
 	helpModal := modal(helpPage, 80, 40)
 
@@ -160,12 +172,20 @@ func NewAppView(app *tview.Application, config *config.Config) *AppView {
 	}
 }
 
-func (v *AppView) ShowHelp(commands map[rune]*model.Command) {
+func (v *AppView) ToggleHelp(commands map[model.Context]map[rune]*model.Command) {
+	if page, _ := v.Pages.GetFrontPage(); page == "help page" {
+		v.Pages.HidePage("help page")
+		v.HelpPage.Clear()
+		return
+	}
+
 	v.Pages.ShowPage("help page")
 
-	// for trigger, cmd := range commands {
-	//
-	// }
+	for ctx, cmdMap := range commands {
+		for trigger, cmd := range cmdMap {
+			v.HelpPage.AddItem(fmt.Sprintf("%c - %s - %s", trigger, ctx, cmd), "", 0, nil)
+		}
+	}
 }
 
 func (v *AppView) UpdateTitles(index, prevIndex int, text, prevText string) {

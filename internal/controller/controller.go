@@ -25,76 +25,68 @@ func NewAppController(m *model.AppModel, cm *model.CommandModel, v *view.AppView
 }
 
 func (c *AppController) AddCommands() {
-	gCmd := model.Command{
-		Description: "Goes to the top of the list",
-		Context:     model.AppList,
-		Handler: func() {
+	// AppList Commands
+	c.CommandModel.Add(
+		'g',
+		model.AppList,
+		"Goes to the top of the list",
+		func() {
 			c.View.AppList.SetCurrentItem(0)
 		},
-	}
-	c.CommandModel.Add('g', gCmd)
-
-	GCmd := model.Command{
-		Description: "Goes to the bottom of the list",
-		Context:     model.AppList,
-		Handler: func() {
+	)
+	c.CommandModel.Add(
+		'G',
+		model.AppList,
+		"Goes to the bottom of the list",
+		func() {
 			c.View.AppList.SetCurrentItem(c.View.AppList.GetItemCount() - 1)
 		},
-	}
-	c.CommandModel.Add('G', GCmd)
-
-	jCmd := model.Command{
-		Description: "Scrolls down one row",
-		Context:     model.AppList,
-		Handler: func() {
+	)
+	c.CommandModel.Add(
+		'j',
+		model.AppList,
+		"Scrolls down one row",
+		func() {
 			if c.View.AppList.GetCurrentItem()+1 == c.View.AppList.GetItemCount() {
 				c.View.AppList.SetCurrentItem(0)
 			}
 
 			c.View.AppList.SetCurrentItem(c.View.AppList.GetCurrentItem() + 1)
 		},
-	}
-	c.CommandModel.Add('j', jCmd)
-
-	kCmd := model.Command{
-		Description: "Scrolls up one row",
-		Context:     model.AppList,
-		Handler: func() {
+	)
+	c.CommandModel.Add(
+		'k',
+		model.AppList,
+		"Scrolls up one row",
+		func() {
 			if c.View.AppList.GetCurrentItem() == 0 {
 				c.View.AppList.SetCurrentItem(-1)
 			}
 
 			c.View.AppList.SetCurrentItem(c.View.AppList.GetCurrentItem() - 1)
 		},
-	}
-	c.CommandModel.Add('k', kCmd)
+	)
 
-	quitCmd := model.Command{
-		Description: "Quits the application",
-		Context:     model.App,
-		Handler: func() {
+	// App Commands
+	c.CommandModel.Add(
+		'q',
+		model.App,
+		"Quits the application",
+		func() {
 			c.View.App.Stop()
 		},
-	}
-	c.CommandModel.Add('q', quitCmd)
+	)
 
-	closeHelpCmd := model.Command{
-		Description: "Closes the help window",
-		Context:     model.Help,
-		Handler: func() {
-			c.View.Pages.HidePage("help page")
+	c.CommandModel.Add(
+		'?',
+		model.App,
+		"Toggles the help page",
+		func() {
+			c.View.ToggleHelp(c.CommandModel.Commands)
 		},
-	}
-	c.CommandModel.Add('c', closeHelpCmd)
+	)
 
-	helpCmd := model.Command{
-		Description: "Displays a help page",
-		Context:     model.App,
-		Handler: func() {
-			c.View.ShowHelp(c.CommandModel.Commands)
-		},
-	}
-	c.CommandModel.Add('?', helpCmd)
+	// Help Commands
 }
 
 func (c *AppController) SetupEventHandlers() {
@@ -116,7 +108,7 @@ func (c *AppController) SetupEventHandlers() {
 	// application vim-like navigation
 	c.View.AppList.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyRune {
-			if cmd, ok := c.CommandModel.Commands[event.Rune()]; ok && cmd.Context == model.AppList {
+			if cmd, ok := c.CommandModel.Commands[model.AppList][event.Rune()]; ok {
 				cmd.Handler()
 				return nil
 			}
@@ -127,7 +119,7 @@ func (c *AppController) SetupEventHandlers() {
 
 	c.View.HelpPage.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyRune {
-			if cmd, ok := c.CommandModel.Commands[event.Rune()]; ok && cmd.Context == model.Help {
+			if cmd, ok := c.CommandModel.Commands[model.Help][event.Rune()]; ok {
 				cmd.Handler()
 				return nil
 			}
@@ -224,7 +216,7 @@ func (c *AppController) SetupEventHandlers() {
 
 	c.View.App.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyRune {
-			if cmd, ok := c.CommandModel.Commands[event.Rune()]; ok && cmd.Context == model.App {
+			if cmd, ok := c.CommandModel.Commands[model.App][event.Rune()]; ok {
 				cmd.Handler()
 				return nil
 			}

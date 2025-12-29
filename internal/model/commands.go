@@ -21,24 +21,38 @@ type Command struct {
 }
 
 func (c *Command) String() string {
-	return fmt.Sprintf("%s", c.Description)
+	return fmt.Sprintf("%s %s", c.Context, c.Description)
 }
 
 type CommandModel struct {
-	Commands map[rune]*Command
+	Commands map[Context]map[rune]*Command
 }
 
 func NewCommandModel() *CommandModel {
+	commands := map[Context]map[rune]*Command{}
+
+	commands[App] = map[rune]*Command{}
+	commands[Global] = map[rune]*Command{}
+	commands[AppList] = map[rune]*Command{}
+	commands[MainPage] = map[rune]*Command{}
+	commands[Help] = map[rune]*Command{}
+
 	return &CommandModel{
-		Commands: map[rune]*Command{},
+		Commands: commands,
 	}
 }
 
-func (m *CommandModel) Add(r rune, command Command) error {
-	if cmd, ok := m.Commands[r]; ok {
+func (m *CommandModel) Add(r rune, context Context, desc string, handler func()) error {
+	if cmd, ok := m.Commands[context][r]; ok {
 		return fmt.Errorf("Error: command already exists, %s", cmd)
 	}
 
-	m.Commands[r] = &command
+	cmd := Command{
+		Context:     context,
+		Description: desc,
+		Handler:     handler,
+	}
+
+	m.Commands[context][r] = &cmd
 	return nil
 }
