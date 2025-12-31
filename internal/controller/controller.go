@@ -170,48 +170,12 @@ func (c *AppController) SetupEventHandlers() {
 		return event
 	})
 
-	c.View.SideBar.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+	c.View.MainPage.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyRune {
 			if cmd, ok := c.CommandModel.Commands[model.MainPage][event.Rune()]; ok {
 				cmd.Handler()
 				return nil
 			}
-		}
-
-		if event.Key() == tcell.KeyPgDn {
-			c.View.PageMainContent(1)
-			return nil
-		}
-
-		if event.Key() == tcell.KeyPgUp {
-			c.View.PageMainContent(-1)
-			return nil
-		}
-
-		if event.Key() == tcell.KeyTab {
-			if c.View.App.GetFocus() == c.View.MainTable {
-				c.View.App.SetFocus(c.View.AppList)
-				return nil
-			}
-			c.View.App.SetFocus(c.View.MainTable)
-			return nil
-		}
-
-		if event.Key() == tcell.KeyBacktab {
-			c.View.App.SetFocus(c.View.AppList)
-			return nil
-		}
-
-		if event.Key() == tcell.KeyEsc {
-			if c.Model.SearchString != "" {
-				c.Model.LoadResources(c.Model.SelectedAppName)
-				c.View.SetSearchTitle("")
-				c.View.UpdateMainContent(c.Model.SelectedAppResources)
-			}
-
-			c.Model.SearchString = ""
-			c.View.ClearSearch()
-			return nil
 		}
 
 		return event
@@ -231,6 +195,28 @@ func (c *AppController) SetupEventHandlers() {
 				return nil
 			}
 		}
+
+		if event.Key() == tcell.KeyTab {
+			if c.View.App.GetFocus() == c.View.MainTable {
+				c.View.App.SetFocus(c.View.AppList)
+				return nil
+			}
+			c.View.App.SetFocus(c.View.MainTable)
+			return nil
+		}
+
+		if event.Key() == tcell.KeyEsc {
+			if c.Model.SearchString != "" {
+				c.Model.LoadResources(c.Model.SelectedAppName)
+				c.View.SetSearchTitle("")
+				c.View.UpdateMainContent(c.Model.SelectedAppResources)
+			}
+
+			c.Model.SearchString = ""
+			c.View.ClearSearch()
+			return nil
+		}
+
 		return event
 	})
 
