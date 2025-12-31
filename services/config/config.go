@@ -19,12 +19,30 @@ type Config struct {
 	Background tcell.Color
 }
 
+const ARGO_CONFIG_DIR = "argocd-tui"
+
 func NewConfig() *Config {
-	home, err := os.UserHomeDir()
+	configDir, err := os.UserConfigDir()
 	if err != nil {
-		log.Fatalf("Error loading os home dir: %v", err)
+		log.Fatalf("Could not find config dir: %v", err)
 	}
-	path := fmt.Sprintf("%s/.config/argocd-tui/config.yaml", home)
+
+	path := fmt.Sprintf("%s/argocd-tui/config.yaml", configDir)
+
+	_, err = os.Stat(path)
+	if os.IsNotExist(err) {
+		err = os.MkdirAll(fmt.Sprintf("%s/%s", configDir, ARGO_CONFIG_DIR), 0755)
+		if err != nil {
+			log.Fatalf("Error creating directory: %v", err)
+		}
+
+		file, err := os.Create(path)
+		if err != nil {
+			log.Fatalf("Error creating file %s: %v", path, err)
+		}
+
+		defer file.Close()
+	}
 
 	fileBytes, err := os.ReadFile(path)
 	if err != nil {
