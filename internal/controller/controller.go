@@ -34,6 +34,7 @@ func (c *AppController) AddCommands() {
 			c.View.AppList.SetCurrentItem(0)
 		},
 	)
+
 	c.CommandModel.Add(
 		'G',
 		model.AppList,
@@ -42,6 +43,7 @@ func (c *AppController) AddCommands() {
 			c.View.AppList.SetCurrentItem(c.View.AppList.GetItemCount() - 1)
 		},
 	)
+
 	c.CommandModel.Add(
 		'j',
 		model.AppList,
@@ -54,6 +56,7 @@ func (c *AppController) AddCommands() {
 			c.View.AppList.SetCurrentItem(c.View.AppList.GetCurrentItem() + 1)
 		},
 	)
+
 	c.CommandModel.Add(
 		'k',
 		model.AppList,
