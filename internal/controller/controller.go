@@ -86,42 +86,6 @@ func (c *AppController) AddCommands() {
 	// Main Page Commands
 
 	c.CommandModel.Add(
-		'l',
-		model.MainPage,
-		"WIP for horizontal scrolling",
-		func(ctx model.Context) {
-			c.View.HorizontallyScrollMainTable(1)
-		},
-	)
-
-	c.CommandModel.Add(
-		'h',
-		model.MainPage,
-		"WIP for horizontal scrolling",
-		func(ctx model.Context) {
-			c.View.HorizontallyScrollMainTable(-1)
-		},
-	)
-
-	c.CommandModel.Add(
-		'D',
-		model.MainPage,
-		"Page Down",
-		func(ctx model.Context) {
-			c.View.PageMainContent(1)
-		},
-	)
-
-	c.CommandModel.Add(
-		'U',
-		model.MainPage,
-		"Page Up",
-		func(ctx model.Context) {
-			c.View.PageMainContent(-1)
-		},
-	)
-
-	c.CommandModel.Add(
 		'/',
 		model.MainPage,
 		"Toggle Search Bar",
