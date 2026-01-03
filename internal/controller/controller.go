@@ -25,7 +25,7 @@ func NewAppController(m *model.AppModel, cm *model.CommandModel, v *view.AppView
 }
 
 func (c *AppController) AddCommands() {
-	// AppList Commands
+	// Global Nav Commands
 	c.CommandModel.Add(
 		'g',
 		model.Global,
@@ -78,46 +78,6 @@ func (c *AppController) AddCommands() {
 		"Toggles the help page",
 		func(ctx model.Context) {
 			c.View.ToggleHelp(c.CommandModel.Commands)
-		},
-	)
-
-	// Help Commands
-
-	// Main Page Commands
-
-	c.CommandModel.Add(
-		'l',
-		model.MainPage,
-		"WIP for horizontal scrolling",
-		func(ctx model.Context) {
-			c.View.HorizontallyScrollMainTable(1)
-		},
-	)
-
-	c.CommandModel.Add(
-		'h',
-		model.MainPage,
-		"WIP for horizontal scrolling",
-		func(ctx model.Context) {
-			c.View.HorizontallyScrollMainTable(-1)
-		},
-	)
-
-	c.CommandModel.Add(
-		'D',
-		model.MainPage,
-		"Page Down",
-		func(ctx model.Context) {
-			c.View.PageMainContent(1)
-		},
-	)
-
-	c.CommandModel.Add(
-		'U',
-		model.MainPage,
-		"Page Up",
-		func(ctx model.Context) {
-			c.View.PageMainContent(-1)
 		},
 	)
 
