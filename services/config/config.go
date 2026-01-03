@@ -10,15 +10,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type InternalConfig struct {
-	Foreground string `yaml:"foreground"`
-	Background string `yaml:"background"`
-}
-
-type Config struct {
-	Background tcell.Color
-}
-
 const ARGO_CONFIG_DIR = "argocd-tui"
 
 func NewConfig() *Config {
@@ -57,7 +48,16 @@ func NewConfig() *Config {
 	}
 
 	externalConfig := Config{
-		Background: utils.HexToColor(config.Background, tcell.ColorSkyblue),
+		Background:  utils.HexToColor(config.Colors.Background, tcell.ColorBlack),
+		Border:      utils.HexToColor(config.Colors.Border, tcell.ColorDarkSlateGray),
+		Selected:    utils.HexToColor(config.Colors.Selected, tcell.ColorAquaMarine),
+		Header:      utils.HexToColor(config.Colors.Header, tcell.ColorDarkSlateGray),
+		Text:        utils.HexToColor(config.Colors.Text, tcell.ColorWhite),
+		Foreground:  utils.HexToColor(config.Colors.Foreground, tcell.ColorWhiteSmoke),
+		Progressing: utils.HexToColor(config.Colors.Progressing, tcell.ColorLightBlue),
+		Missing:     utils.HexToColor(config.Colors.Missing, tcell.ColorLightYellow),
+		Healthy:     utils.HexToColor(config.Colors.Healthy, tcell.ColorLightGreen),
+		Degraded:    utils.HexToColor(config.Colors.Degraded, tcell.ColorRed),
 	}
 
 	return &externalConfig
