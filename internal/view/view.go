@@ -57,7 +57,7 @@ func NewAppView(app *tview.Application, config *config.Config, logger *logrus.Lo
 	mainPageContainer := tview.NewFlex().
 		SetDirection(tview.FlexRow)
 
-	searchInput.SetFieldBackgroundColor(tcell.ColorDefault).
+	searchInput.SetFieldBackgroundColor(config.Background).
 		SetBorder(false)
 
 	mainContentContainer.
