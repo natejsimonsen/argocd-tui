@@ -9,12 +9,13 @@ import (
 	"example.com/main/services/config"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
+	"github.com/sirupsen/logrus"
 )
 
 type AppView struct {
 	App                  *tview.Application
 	Pages                *tview.Pages
-	Config               config.Config
+	Config               *config.Config
 	MainPage             *tview.Flex
 	SideBar              *tview.Flex
 	AppList              *tview.List
@@ -26,9 +27,10 @@ type AppView struct {
 	MainPageContainer    *tview.Flex
 	MainTable            *tview.Table
 	StatusBox            *tview.Box
+	Logger               *logrus.Logger
 }
 
-func NewAppView(app *tview.Application, config *config.Config) *AppView {
+func NewAppView(app *tview.Application, config *config.Config, logger *logrus.Logger) *AppView {
 	theme := tview.Theme{
 		PrimitiveBackgroundColor:    tcell.ColorDefault,
 		ContrastBackgroundColor:     tcell.ColorBlack,
@@ -93,8 +95,8 @@ func NewAppView(app *tview.Application, config *config.Config) *AppView {
 		})
 
 	tableStyle := tcell.StyleDefault.
-		Background(config.Selected).
-		Foreground(config.Text).
+		// Background(config.Background).
+		// Foreground(config.Foreground).
 		Bold(true)
 
 	mainTable.SetSelectedStyle(tableStyle)
@@ -177,6 +179,8 @@ func NewAppView(app *tview.Application, config *config.Config) *AppView {
 		CommandBar:           commandBar,
 		MainTable:            mainTable,
 		StatusBox:            bsBox,
+		Config:               config,
+		Logger:               logger,
 	}
 }
 
@@ -354,19 +358,14 @@ func (v *AppView) UpdateMainContent(resources []argocd.ApplicationNode) {
 	for row, manifest := range resources {
 		color := v.Config.Progressing
 
-		if manifest.Health.Status == string(argocd.StatusDegraded) {
+		switch manifest.Health.Status {
+		case string(argocd.StatusDegraded):
 			color = v.Config.Degraded
-		}
-
-		if manifest.Health.Status == string(argocd.StatusHealthy) {
+		case string(argocd.StatusHealthy):
 			color = v.Config.Healthy
-		}
-
-		if manifest.Health.Status == string(argocd.StatusProgressing) {
+		case string(argocd.StatusProgressing):
 			color = v.Config.Progressing
-		}
-
-		if manifest.Health.Status == string(argocd.StatusMissing) {
+		case string(argocd.StatusMissing):
 			color = v.Config.Missing
 		}
 
@@ -394,15 +393,13 @@ func (v *AppView) UpdateMainContent(resources []argocd.ApplicationNode) {
 				SetTextColor(color).
 				SetAlign(tview.AlignLeft)
 
-			if manifest.Health.Status != "" {
-				tableCell.
-					SetSelectedStyle(
-						tcell.StyleDefault.
-							Background(color).
-							Foreground(v.Config.Header).
-							Bold(true),
-					)
-			}
+			tableCell.
+				SetSelectedStyle(
+					tcell.StyleDefault.
+						Background(color).
+						Foreground(v.Config.Background).
+						Bold(true),
+				)
 
 			v.MainTable.SetCell(row+1, i, tableCell)
 		}
