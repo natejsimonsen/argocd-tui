@@ -233,6 +233,7 @@ func (v *AppView) Scroll(dir int) {
 		if dir == 1 {
 			if t.GetCurrentItem() == 0 {
 				t.SetCurrentItem(-1)
+				return
 			}
 
 			t.SetCurrentItem(t.GetCurrentItem() - 1)
@@ -240,6 +241,7 @@ func (v *AppView) Scroll(dir int) {
 		if dir == -1 {
 			if t.GetCurrentItem()+1 == t.GetItemCount() {
 				t.SetCurrentItem(0)
+				return
 			}
 
 			t.SetCurrentItem(t.GetCurrentItem() + 1)
