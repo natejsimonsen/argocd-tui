@@ -50,7 +50,7 @@ func NewConfig() *Config {
 	externalConfig := Config{
 		Background:  utils.HexToColor(config.Colors.Background, tcell.ColorBlack),
 		Border:      utils.HexToColor(config.Colors.Border, tcell.ColorDarkSlateGray),
-		Selected:    utils.HexToColor(config.Colors.Selected, tcell.ColorAquaMarine),
+		Selected:    utils.HexToColor(config.Colors.Selected, tcell.ColorSkyblue),
 		Header:      utils.HexToColor(config.Colors.Header, tcell.ColorDarkSlateGray),
 		Text:        utils.HexToColor(config.Colors.Text, tcell.ColorWhite),
 		Foreground:  utils.HexToColor(config.Colors.Foreground, tcell.ColorWhiteSmoke),
