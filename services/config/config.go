@@ -18,6 +18,10 @@ func NewConfig() *Config {
 		log.Fatalf("Could not find config dir: %v", err)
 	}
 
+	if os.Getenv("XDG_CONFIG_HOME") != "" {
+		configDir = os.Getenv("XDG_CONFIG_HOME")
+	}
+
 	path := fmt.Sprintf("%s/argocd-tui/config.yaml", configDir)
 
 	_, err = os.Stat(path)

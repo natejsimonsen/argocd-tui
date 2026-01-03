@@ -7,7 +7,7 @@ import (
 type InternalConfig struct {
 	Colors struct {
 		Text        string `yaml:"text"`
-		Border      string `yaml:"text"`
+		Border      string `yaml:"border"`
 		Header      string `yaml:"header"`
 		Foreground  string `yaml:"foreground"`
 		Selected    string `yaml:"selected"`

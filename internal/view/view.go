@@ -32,17 +32,12 @@ type AppView struct {
 
 func NewAppView(app *tview.Application, config *config.Config, logger *logrus.Logger) *AppView {
 	theme := tview.Theme{
-		PrimitiveBackgroundColor:    tcell.ColorDefault,
-		ContrastBackgroundColor:     tcell.ColorBlack,
-		MoreContrastBackgroundColor: tcell.ColorBlack,
-		BorderColor:                 tcell.ColorGray,
-		TitleColor:                  tcell.ColorGreen,
-		GraphicsColor:               tcell.ColorYellow,
-		PrimaryTextColor:            tcell.ColorWhite,
-		SecondaryTextColor:          tcell.ColorAqua,
-		TertiaryTextColor:           tcell.ColorFuchsia,
-		InverseTextColor:            tcell.ColorBlack,
-		ContrastSecondaryTextColor:  tcell.ColorBlack,
+		PrimitiveBackgroundColor: config.Background,
+		BorderColor:              config.Border,
+		TitleColor:               config.Text,
+		PrimaryTextColor:         config.Text,
+		SecondaryTextColor:       config.Progressing,
+		InverseTextColor:         config.Background,
 	}
 
 	tview.Styles = theme
@@ -207,7 +202,7 @@ func (v *AppView) UpdateTitles(index, prevIndex int, text, prevText string) {
 
 func (v *AppView) UpdateAppList(apps []argocd.ApplicationItem) {
 	for _, app := range apps {
-		colorTag := GetColorTag(app.Status.Health.Status)
+		colorTag := v.GetColorTag(app.Status.Health.Status)
 
 		name := fmt.Sprintf("%s%s", colorTag, app.Metadata.Name)
 		v.AppList.AddItem(name, "", 0, nil)
@@ -408,26 +403,26 @@ func (v *AppView) UpdateMainContent(resources []argocd.ApplicationNode) {
 	v.MainTable.Select(1, 0)
 }
 
-func GetColorTag(status argocd.ApplicationHealthStatus) string {
+func (v *AppView) GetColorTag(status argocd.ApplicationHealthStatus) string {
 	colorTag := ""
 	if string(status) == string(argocd.StatusHealthy) {
-		colorTag = "[green]"
+		colorTag = fmt.Sprintf("[%s]", v.Config.Healthy.CSS())
 	}
 
 	if string(status) == string(argocd.StatusDegraded) {
-		colorTag = "[red]"
+		colorTag = fmt.Sprintf("[%s]", v.Config.Degraded.CSS())
 	}
 
 	if string(status) == string(argocd.StatusMissing) {
-		colorTag = "[yellow]"
+		colorTag = fmt.Sprintf("[%s]", v.Config.Missing.CSS())
 	}
 
 	if string(status) == string(argocd.StatusUnknown) {
-		colorTag = "[grey]"
+		colorTag = fmt.Sprintf("[%s]", v.Config.Header.CSS())
 	}
 
 	if string(status) == string(argocd.StatusProgressing) {
-		colorTag = "[blue]"
+		colorTag = fmt.Sprintf("[%s]", v.Config.Progressing.CSS())
 	}
 
 	return colorTag
