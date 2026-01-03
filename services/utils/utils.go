@@ -35,3 +35,14 @@ func HexToColor(hexStr string, def tcell.Color) tcell.Color {
 	userColor := tcell.NewHexColor(int32(v))
 	return userColor
 }
+
+func GetContrastColor(c tcell.Color) tcell.Color {
+	r, g, b := c.RGB()
+
+	luminance := (float64(r)*0.299 + float64(g)*0.587 + float64(b)*0.114) / 255
+
+	if luminance > 0.5 {
+		return tcell.ColorBlack
+	}
+	return tcell.ColorWhite
+}

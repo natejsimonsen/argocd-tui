@@ -7,17 +7,19 @@ import (
 	"example.com/main/internal/model"
 	"example.com/main/services/argocd"
 	"example.com/main/services/config"
+	"example.com/main/services/utils"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
+	"github.com/sirupsen/logrus"
 )
 
 type AppView struct {
 	App                  *tview.Application
 	Pages                *tview.Pages
-	Config               config.Config
+	Config               *config.Config
 	MainPage             *tview.Flex
 	SideBar              *tview.Flex
-	AppList              *tview.List
+	AppTable             *tview.Table
 	HelpModal            tview.Primitive
 	HelpPage             *tview.List
 	CommandBar           *tview.Flex
@@ -26,24 +28,23 @@ type AppView struct {
 	MainPageContainer    *tview.Flex
 	MainTable            *tview.Table
 	StatusBox            *tview.Box
+	Logger               *logrus.Logger
 }
 
-func NewAppView(app *tview.Application, config *config.Config) *AppView {
+func NewAppView(app *tview.Application, config *config.Config, logger *logrus.Logger) *AppView {
 	theme := tview.Theme{
-		PrimitiveBackgroundColor:    tcell.ColorDefault,
-		ContrastBackgroundColor:     tcell.ColorBlack,
-		MoreContrastBackgroundColor: tcell.ColorBlack,
-		BorderColor:                 tcell.ColorGray,
-		TitleColor:                  tcell.ColorGreen,
-		GraphicsColor:               tcell.ColorYellow,
-		PrimaryTextColor:            tcell.ColorWhite,
-		SecondaryTextColor:          tcell.ColorAqua,
-		TertiaryTextColor:           tcell.ColorFuchsia,
-		InverseTextColor:            tcell.ColorBlack,
-		ContrastSecondaryTextColor:  tcell.ColorBlack,
+		PrimitiveBackgroundColor: config.Background,
+		BorderColor:              config.Border,
+		TitleColor:               config.Text,
+		PrimaryTextColor:         config.Text,
+		SecondaryTextColor:       config.Progressing,
+		InverseTextColor:         config.Background,
 	}
 
 	tview.Styles = theme
+
+	tableStyle := tcell.StyleDefault.
+		Bold(true)
 
 	mainPage := tview.NewFlex()
 	mainContentContainer := tview.NewFlex()
@@ -51,30 +52,13 @@ func NewAppView(app *tview.Application, config *config.Config) *AppView {
 		SetDirection(tview.FlexRow)
 	commandBar := tview.NewFlex()
 	mainTable := tview.NewTable()
+	appTable := tview.NewTable()
 	searchInput := tview.NewInputField()
 	mainPageContainer := tview.NewFlex().
 		SetDirection(tview.FlexRow)
 
 	searchInput.SetFieldBackgroundColor(tcell.ColorDefault).
 		SetBorder(false)
-
-	textList := tview.NewList().
-		SetHighlightFullLine(true).
-		ShowSecondaryText(false).
-		SetSelectedBackgroundColor(tcell.ColorAqua).
-		SetSelectedTextColor(tcell.ColorBlack)
-
-	textList.
-		SetBlurFunc(func() {
-			textList.SetBorderColor(tview.Styles.BorderColor)
-		}).
-		SetFocusFunc(func() {
-			textList.SetBorderColor(tcell.ColorAquaMarine)
-		})
-
-	textList.
-		SetBorder(true).
-		SetTitle(" Applications ")
 
 	mainContentContainer.
 		SetBorder(true).
@@ -86,22 +70,33 @@ func NewAppView(app *tview.Application, config *config.Config) *AppView {
 
 	bsBox.
 		SetFocusFunc(func() {
-			bsBox.SetBorderColor(tcell.ColorAquaMarine)
+			bsBox.SetBorderColor(config.Selected)
 		}).
 		SetBlurFunc(func() {
-			bsBox.SetBorderColor(tview.Styles.BorderColor)
+			bsBox.SetBorderColor(config.Border)
 		})
 
-	tableStyle := tcell.StyleDefault.
-		Background(config.Background).
-		Foreground(tcell.ColorDarkSlateGray).
-		Bold(true)
+	appTable.
+		SetTitle(" Applications ").
+		SetBorder(true)
+
+	appTable.
+		SetBlurFunc(func() {
+			appTable.SetBorderColor(config.Border)
+		}).
+		SetFocusFunc(func() {
+			appTable.SetBorderColor(config.Selected)
+		})
+
+	appTable.
+		SetSelectedStyle(tableStyle).
+		SetSelectable(true, false)
 
 	mainTable.SetSelectedStyle(tableStyle)
 	mainTable.SetSelectable(true, false)
 
 	sideBar.
-		AddItem(textList, 0, 1, true).
+		AddItem(appTable, 0, 1, true).
 		AddItem(bsBox, 0, 1, true)
 
 	commandBar.
@@ -113,10 +108,10 @@ func NewAppView(app *tview.Application, config *config.Config) *AppView {
 
 	mainContentContainer.
 		SetBlurFunc(func() {
-			mainContentContainer.SetBorderColor(tview.Styles.BorderColor)
+			mainContentContainer.SetBorderColor(config.Border)
 		}).
 		SetFocusFunc(func() {
-			mainContentContainer.SetBorderColor(tcell.ColorAquaMarine)
+			mainContentContainer.SetBorderColor(config.Selected)
 		})
 
 	mainPage.
@@ -142,8 +137,8 @@ func NewAppView(app *tview.Application, config *config.Config) *AppView {
 	helpPage := tview.NewList().
 		SetHighlightFullLine(true).
 		ShowSecondaryText(false).
-		SetSelectedBackgroundColor(tcell.ColorAqua).
-		SetSelectedTextColor(tcell.ColorBlack)
+		SetSelectedBackgroundColor(config.Selected).
+		SetSelectedTextColor(config.Background)
 
 	helpPage.
 		SetBorder(true).
@@ -151,10 +146,10 @@ func NewAppView(app *tview.Application, config *config.Config) *AppView {
 
 	helpPage.
 		SetBlurFunc(func() {
-			helpPage.SetBorderColor(tview.Styles.BorderColor)
+			helpPage.SetBorderColor(config.Border)
 		}).
 		SetFocusFunc(func() {
-			helpPage.SetBorderColor(tcell.ColorAquaMarine)
+			helpPage.SetBorderColor(config.Selected)
 		})
 
 	helpModal := modal(helpPage, 80, 40)
@@ -170,13 +165,15 @@ func NewAppView(app *tview.Application, config *config.Config) *AppView {
 		SideBar:              sideBar,
 		HelpPage:             helpPage,
 		HelpModal:            helpModal,
-		AppList:              textList,
+		AppTable:             appTable,
 		MainContentContainer: mainContentContainer,
 		MainPageContainer:    mainPageContainer,
 		SearchInput:          searchInput,
 		CommandBar:           commandBar,
 		MainTable:            mainTable,
 		StatusBox:            bsBox,
+		Config:               config,
+		Logger:               logger,
 	}
 }
 
@@ -196,24 +193,54 @@ func (v *AppView) ToggleHelp(commands map[model.Context]map[rune]*model.Command)
 	}
 }
 
-func (v *AppView) UpdateTitles(index, prevIndex int, text, prevText string) {
-	v.AppList.SetItemText(prevIndex, prevText, "")
-	v.AppList.SetItemText(index, "[::b]"+text, "")
-}
+func (v *AppView) UpdateAppTable(apps []argocd.ApplicationItem) {
+	v.AppTable.Clear()
 
-func (v *AppView) UpdateAppList(apps []argocd.ApplicationItem) {
-	for _, app := range apps {
-		colorTag := GetColorTag(app.Status.Health.Status)
-
-		name := fmt.Sprintf("%s%s", colorTag, app.Metadata.Name)
-		v.AppList.AddItem(name, "", 0, nil)
+	if len(apps) == 0 {
+		v.AppTable.SetCell(0, 0,
+			tview.NewTableCell("No data").
+				SetTextColor(v.Config.Text).
+				SetAlign(tview.AlignLeft))
+		return
 	}
+
+	for i, app := range apps {
+		color := v.Config.Progressing
+
+		switch app.Status.Health.Status {
+		case argocd.StatusDegraded:
+			color = v.Config.Degraded
+		case argocd.StatusHealthy:
+			color = v.Config.Healthy
+		case argocd.StatusProgressing:
+			color = v.Config.Progressing
+		case argocd.StatusMissing:
+			color = v.Config.Missing
+		}
+
+		tableCell := tview.NewTableCell(app.Metadata.Name).
+			SetTextColor(color).
+			SetAlign(tview.AlignLeft).
+			SetExpansion(1)
+
+		tableCell.
+			SetSelectedStyle(
+				tcell.StyleDefault.
+					Background(color).
+					Foreground(utils.GetContrastColor(color)).
+					Bold(true),
+			)
+
+		v.AppTable.SetCell(i, 0, tableCell)
+	}
+
+	v.AppTable.Select(0, 0)
 }
 
 func (v *AppView) RemoveSearchBar() {
 	v.MainPageContainer.Clear()
 	v.MainPageContainer.AddItem(v.MainPage, 0, 1, false)
-	v.App.SetFocus(v.AppList)
+	v.App.SetFocus(v.AppTable)
 	v.SearchInput.SetText("")
 	v.MainContentContainer.SetTitle(" Main Content ")
 }
@@ -229,29 +256,12 @@ func (v *AppView) Scroll(dir int) {
 	prim := v.App.GetFocus()
 
 	switch t := prim.(type) {
-	case *tview.List:
-		if dir == 1 {
-			if t.GetCurrentItem() == 0 {
-				t.SetCurrentItem(-1)
-				return
-			}
-
-			t.SetCurrentItem(t.GetCurrentItem() - 1)
-		}
-		if dir == -1 {
-			if t.GetCurrentItem()+1 == t.GetItemCount() {
-				t.SetCurrentItem(0)
-				return
-			}
-
-			t.SetCurrentItem(t.GetCurrentItem() + 1)
-		}
 	case *tview.Table:
 		row, _ := t.GetSelection()
 		offset := 1
 		newRow := row + offset*-1*dir
 
-		if newRow <= 0 {
+		if newRow <= 0 && t == v.MainTable {
 			newRow = 1
 		}
 
@@ -259,7 +269,7 @@ func (v *AppView) Scroll(dir int) {
 			return
 		}
 
-		t.Select(newRow, 0)
+		t.Select(max(newRow, 0), 0)
 	}
 }
 
@@ -270,7 +280,7 @@ func (v *AppView) ScrollTo(row int) {
 	case *tview.List:
 		t.SetCurrentItem(row)
 	case *tview.Table:
-		if row == 0 {
+		if row == 0 && t == v.MainTable {
 			t.Select(1, 0)
 			return
 		}
@@ -296,60 +306,29 @@ func (v *AppView) ClearSearch() {
 	v.RemoveSearchBar()
 }
 
-func (v *AppView) HorizontallyScrollMainTable(direction int) {
-	row, col := v.MainTable.GetSelection()
-	offset := 1
-	newCol := col + offset*direction
-
-	if newCol == 0 {
-		newCol++
-	}
-
-	if newCol == v.MainTable.GetRowCount() {
-		return
-	}
-
-	v.MainTable.Select(row, newCol)
-}
-
 func (v *AppView) SetSearchTitle(search string) {
 	title := strings.Split(v.MainContentContainer.GetTitle(), "/")[0]
 	v.MainContentContainer.SetTitle(fmt.Sprintf("%s / %s ", title, search))
 }
 
-func (v *AppView) ScrollMainContent(direction int) {
-	row, _ := v.MainTable.GetSelection()
-	offset := 1
-	newRow := row + offset*direction
-
-	if newRow <= 0 {
-		newRow = 1
-	}
-
-	if newRow >= v.MainTable.GetRowCount() {
-		return
-	}
-
-	v.MainTable.Select(newRow, 0)
-}
-
-func (v *AppView) PageMainContent(direction int) {
-	rowNums := v.MainTable.GetRowCount()
-	row, _ := v.MainTable.GetSelection()
-	offset := rowNums / 2
-	newRow := row + offset*direction
-
-	if newRow <= 0 {
-		newRow = 1
-	}
-
-	if newRow >= rowNums {
-		v.MainTable.Select(rowNums-1, 0)
-		return
-	}
-
-	v.MainTable.Select(newRow, 0)
-}
+// TODO: refactor to global func
+// func (v *AppView) PageMainContent(direction int) {
+// 	rowNums := v.MainTable.GetRowCount()
+// 	row, _ := v.MainTable.GetSelection()
+// 	offset := rowNums / 2
+// 	newRow := row + offset*direction
+//
+// 	if newRow <= 0 {
+// 		newRow = 1
+// 	}
+//
+// 	if newRow >= rowNums {
+// 		v.MainTable.Select(rowNums-1, 0)
+// 		return
+// 	}
+//
+// 	v.MainTable.Select(newRow, 0)
+// }
 
 func (v *AppView) UpdateMainContent(resources []argocd.ApplicationNode) {
 	v.MainTable.Clear()
@@ -357,37 +336,44 @@ func (v *AppView) UpdateMainContent(resources []argocd.ApplicationNode) {
 	if len(resources) == 0 {
 		v.MainTable.SetCell(0, 0,
 			tview.NewTableCell("No data").
-				SetTextColor(tcell.ColorWhite).
+				SetTextColor(v.Config.Text).
 				SetAlign(tview.AlignLeft))
 		return
 	}
 
-	columns := []string{"Name", "Kind", "Health", "Namespace", "Version", "Resource Version", "Images"}
+	columns := []string{
+		"Name",
+		"Kind",
+		"Health",
+		"Namespace",
+		"Version",
+		"Resource Version",
+		"Images",
+	}
 
 	for i, column := range columns {
-		v.MainTable.SetCell(0, i,
+		v.MainTable.SetCell(
+			0,
+			i,
 			tview.NewTableCell(column).
-				SetTextColor(tcell.ColorWhite).
-				SetAlign(tview.AlignLeft))
+				SetTextColor(v.Config.Header).
+				SetAlign(tview.AlignLeft),
+		).
+			SetFixed(1, i)
 	}
 
 	for row, manifest := range resources {
-		color := tcell.ColorWhiteSmoke
+		color := v.Config.Progressing
 
-		if manifest.Health.Status == string(argocd.StatusDegraded) {
-			color = tcell.ColorRed
-		}
-
-		if manifest.Health.Status == string(argocd.StatusHealthy) {
-			color = tcell.ColorLightGreen
-		}
-
-		if manifest.Health.Status == string(argocd.StatusProgressing) {
-			color = tcell.ColorLightBlue
-		}
-
-		if manifest.Health.Status == string(argocd.StatusMissing) {
-			color = tcell.ColorLightYellow
+		switch manifest.Health.Status {
+		case string(argocd.StatusDegraded):
+			color = v.Config.Degraded
+		case string(argocd.StatusHealthy):
+			color = v.Config.Healthy
+		case string(argocd.StatusProgressing):
+			color = v.Config.Progressing
+		case string(argocd.StatusMissing):
+			color = v.Config.Missing
 		}
 
 		for i, column := range columns {
@@ -414,15 +400,13 @@ func (v *AppView) UpdateMainContent(resources []argocd.ApplicationNode) {
 				SetTextColor(color).
 				SetAlign(tview.AlignLeft)
 
-			if manifest.Health.Status != "" {
-				tableCell.
-					SetSelectedStyle(
-						tcell.StyleDefault.
-							Background(color).
-							Foreground(tcell.ColorDarkSlateGray).
-							Bold(true),
-					)
-			}
+			tableCell.
+				SetSelectedStyle(
+					tcell.StyleDefault.
+						Background(color).
+						Foreground(utils.GetContrastColor(color)).
+						Bold(true),
+				)
 
 			v.MainTable.SetCell(row+1, i, tableCell)
 		}
@@ -431,27 +415,24 @@ func (v *AppView) UpdateMainContent(resources []argocd.ApplicationNode) {
 	v.MainTable.Select(1, 0)
 }
 
-func GetColorTag(status argocd.ApplicationHealthStatus) string {
+func (v *AppView) GetColorTag(status argocd.ApplicationHealthStatus) (string, tcell.Color) {
 	colorTag := ""
-	if string(status) == string(argocd.StatusHealthy) {
-		colorTag = "[green]"
+	var color tcell.Color
+
+	switch status {
+	case argocd.StatusHealthy:
+		color = v.Config.Healthy
+	case argocd.StatusDegraded:
+		color = v.Config.Degraded
+	case argocd.StatusMissing:
+		color = v.Config.Missing
+	case argocd.StatusUnknown:
+		color = v.Config.Header
+	case argocd.StatusProgressing:
+		color = v.Config.Progressing
 	}
 
-	if string(status) == string(argocd.StatusDegraded) {
-		colorTag = "[red]"
-	}
+	colorTag = fmt.Sprintf("[%s]", color.CSS())
 
-	if string(status) == string(argocd.StatusMissing) {
-		colorTag = "[yellow]"
-	}
-
-	if string(status) == string(argocd.StatusUnknown) {
-		colorTag = "[grey]"
-	}
-
-	if string(status) == string(argocd.StatusProgressing) {
-		colorTag = "[blue]"
-	}
-
-	return colorTag
+	return colorTag, color
 }

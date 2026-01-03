@@ -9,7 +9,7 @@ type Context string
 const (
 	App      = "App"
 	Global   = "Global"
-	AppList  = "AppList"
+	AppTable = "AppTable"
 	MainPage = "MainPage"
 	Help     = "Help"
 )
@@ -34,7 +34,7 @@ func NewCommandModel() *CommandModel {
 
 	commands[App] = map[rune]*Command{}
 	commands[Global] = map[rune]*Command{}
-	commands[AppList] = map[rune]*Command{}
+	commands[AppTable] = map[rune]*Command{}
 	commands[MainPage] = map[rune]*Command{}
 	commands[Help] = map[rune]*Command{}
 

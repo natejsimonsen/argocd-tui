@@ -6,7 +6,6 @@ import (
 	"example.com/main/internal/model"
 	"example.com/main/internal/view"
 	"example.com/main/services/argocd"
-	"example.com/main/services/utils"
 	"github.com/gdamore/tcell/v2"
 )
 
@@ -25,7 +24,7 @@ func NewAppController(m *model.AppModel, cm *model.CommandModel, v *view.AppView
 }
 
 func (c *AppController) AddCommands() {
-	// AppList Commands
+	// AppTable Commands
 	c.CommandModel.Add(
 		'g',
 		model.Global,
@@ -86,42 +85,6 @@ func (c *AppController) AddCommands() {
 	// Main Page Commands
 
 	c.CommandModel.Add(
-		'l',
-		model.MainPage,
-		"WIP for horizontal scrolling",
-		func(ctx model.Context) {
-			c.View.HorizontallyScrollMainTable(1)
-		},
-	)
-
-	c.CommandModel.Add(
-		'h',
-		model.MainPage,
-		"WIP for horizontal scrolling",
-		func(ctx model.Context) {
-			c.View.HorizontallyScrollMainTable(-1)
-		},
-	)
-
-	c.CommandModel.Add(
-		'D',
-		model.MainPage,
-		"Page Down",
-		func(ctx model.Context) {
-			c.View.PageMainContent(1)
-		},
-	)
-
-	c.CommandModel.Add(
-		'U',
-		model.MainPage,
-		"Page Up",
-		func(ctx model.Context) {
-			c.View.PageMainContent(-1)
-		},
-	)
-
-	c.CommandModel.Add(
 		'/',
 		model.MainPage,
 		"Toggle Search Bar",
@@ -134,23 +97,16 @@ func (c *AppController) AddCommands() {
 func (c *AppController) SetupEventHandlers() {
 	c.AddCommands()
 
-	// application on change
-	c.View.AppList.SetChangedFunc(func(index int, mainText, secondaryText string, shortcut rune) {
-		appName := utils.StripTags(mainText)
-
-		c.Model.LoadResources(appName)
-
+	c.View.AppTable.SetSelectionChangedFunc(func(row int, col int) {
+		name := c.View.AppTable.GetCell(row, col)
+		c.Model.LoadResources(name.Text)
 		c.View.UpdateMainContent(c.Model.SelectedAppResources)
-		c.View.UpdateTitles(index, c.Model.PrevIndex, appName, c.Model.PrevText)
-
-		c.Model.PrevText = mainText
-		c.Model.PrevIndex = index
 	})
 
-	// applist commands
-	c.View.AppList.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+	// apptable commands
+	c.View.AppTable.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyRune {
-			if cmd, ok := c.CommandModel.Commands[model.AppList][event.Rune()]; ok {
+			if cmd, ok := c.CommandModel.Commands[model.AppTable][event.Rune()]; ok {
 				cmd.Handler()
 				return nil
 			}
@@ -159,6 +115,7 @@ func (c *AppController) SetupEventHandlers() {
 		return event
 	})
 
+	// help page cmds
 	c.View.HelpPage.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyRune {
 			if cmd, ok := c.CommandModel.Commands[model.Help][event.Rune()]; ok {
@@ -170,6 +127,7 @@ func (c *AppController) SetupEventHandlers() {
 		return event
 	})
 
+	// main page cmds
 	c.View.MainPage.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyRune {
 			if cmd, ok := c.CommandModel.Commands[model.MainPage][event.Rune()]; ok {
@@ -181,6 +139,7 @@ func (c *AppController) SetupEventHandlers() {
 		return event
 	})
 
+	// global cmds
 	c.View.App.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyRune {
 			// app commands
@@ -198,7 +157,7 @@ func (c *AppController) SetupEventHandlers() {
 
 		if event.Key() == tcell.KeyTab {
 			if c.View.App.GetFocus() == c.View.MainTable {
-				c.View.App.SetFocus(c.View.AppList)
+				c.View.App.SetFocus(c.View.AppTable)
 				return nil
 			}
 			c.View.App.SetFocus(c.View.MainTable)
@@ -220,6 +179,7 @@ func (c *AppController) SetupEventHandlers() {
 		return event
 	})
 
+	// command bar cmds
 	c.View.CommandBar.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyRune {
 			if event.Rune() == '/' {
@@ -261,7 +221,7 @@ func (c *AppController) FilterContent(search string) []argocd.ApplicationNode {
 func (c *AppController) Start() error {
 	c.SetupEventHandlers()
 	c.Model.LoadApplications()
-	c.View.UpdateAppList(c.Model.Applications)
+	c.View.UpdateAppTable(c.Model.Applications)
 	c.View.App.SetRoot(c.View.Pages, true)
 	return c.View.App.Run()
 }

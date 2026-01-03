@@ -17,7 +17,7 @@ func main() {
 	appModel := model.NewAppModel(l, argocdSvc)
 	commandModel := model.NewCommandModel()
 	config := config.NewConfig()
-	appView := view.NewAppView(app, config)
+	appView := view.NewAppView(app, config, l)
 	appController := controller.NewAppController(
 		appModel,
 		commandModel,
