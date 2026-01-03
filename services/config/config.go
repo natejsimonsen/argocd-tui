@@ -52,7 +52,7 @@ func NewConfig() *Config {
 	}
 
 	externalConfig := Config{
-		Background:  utils.HexToColor(config.Colors.Background, tcell.ColorBlack),
+		Background:  utils.HexToColor(config.Colors.Background, tcell.ColorDefault),
 		Border:      utils.HexToColor(config.Colors.Border, tcell.ColorDarkSlateGray),
 		Selected:    utils.HexToColor(config.Colors.Selected, tcell.ColorSkyblue),
 		Header:      utils.HexToColor(config.Colors.Header, tcell.ColorGray),
@@ -61,7 +61,7 @@ func NewConfig() *Config {
 		Progressing: utils.HexToColor(config.Colors.Progressing, tcell.ColorLightBlue),
 		Missing:     utils.HexToColor(config.Colors.Missing, tcell.ColorLightYellow),
 		Healthy:     utils.HexToColor(config.Colors.Healthy, tcell.ColorLightGreen),
-		Degraded:    utils.HexToColor(config.Colors.Degraded, tcell.ColorRed),
+		Degraded:    utils.HexToColor(config.Colors.Degraded, tcell.ColorIndianRed),
 	}
 
 	return &externalConfig

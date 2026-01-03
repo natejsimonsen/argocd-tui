@@ -7,6 +7,7 @@ import (
 	"example.com/main/internal/model"
 	"example.com/main/services/argocd"
 	"example.com/main/services/config"
+	"example.com/main/services/utils"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	"github.com/sirupsen/logrus"
@@ -18,7 +19,7 @@ type AppView struct {
 	Config               *config.Config
 	MainPage             *tview.Flex
 	SideBar              *tview.Flex
-	AppList              *tview.List
+	AppTable             *tview.Table
 	HelpModal            tview.Primitive
 	HelpPage             *tview.List
 	CommandBar           *tview.Flex
@@ -42,36 +43,22 @@ func NewAppView(app *tview.Application, config *config.Config, logger *logrus.Lo
 
 	tview.Styles = theme
 
+	tableStyle := tcell.StyleDefault.
+		Bold(true)
+
 	mainPage := tview.NewFlex()
 	mainContentContainer := tview.NewFlex()
 	sideBar := tview.NewFlex().
 		SetDirection(tview.FlexRow)
 	commandBar := tview.NewFlex()
 	mainTable := tview.NewTable()
+	appTable := tview.NewTable()
 	searchInput := tview.NewInputField()
 	mainPageContainer := tview.NewFlex().
 		SetDirection(tview.FlexRow)
 
 	searchInput.SetFieldBackgroundColor(tcell.ColorDefault).
 		SetBorder(false)
-
-	textList := tview.NewList().
-		SetHighlightFullLine(true).
-		ShowSecondaryText(false).
-		SetSelectedBackgroundColor(config.Selected).
-		SetSelectedTextColor(config.Background)
-
-	textList.
-		SetBlurFunc(func() {
-			textList.SetBorderColor(config.Border)
-		}).
-		SetFocusFunc(func() {
-			textList.SetBorderColor(config.Selected)
-		})
-
-	textList.
-		SetBorder(true).
-		SetTitle(" Applications ")
 
 	mainContentContainer.
 		SetBorder(true).
@@ -89,16 +76,27 @@ func NewAppView(app *tview.Application, config *config.Config, logger *logrus.Lo
 			bsBox.SetBorderColor(config.Border)
 		})
 
-	tableStyle := tcell.StyleDefault.
-		// Background(config.Background).
-		// Foreground(config.Foreground).
-		Bold(true)
+	appTable.
+		SetTitle(" Applications ").
+		SetBorder(true)
+
+	appTable.
+		SetBlurFunc(func() {
+			appTable.SetBorderColor(config.Border)
+		}).
+		SetFocusFunc(func() {
+			appTable.SetBorderColor(config.Selected)
+		})
+
+	appTable.
+		SetSelectedStyle(tableStyle).
+		SetSelectable(true, false)
 
 	mainTable.SetSelectedStyle(tableStyle)
 	mainTable.SetSelectable(true, false)
 
 	sideBar.
-		AddItem(textList, 0, 1, true).
+		AddItem(appTable, 0, 1, true).
 		AddItem(bsBox, 0, 1, true)
 
 	commandBar.
@@ -167,7 +165,7 @@ func NewAppView(app *tview.Application, config *config.Config, logger *logrus.Lo
 		SideBar:              sideBar,
 		HelpPage:             helpPage,
 		HelpModal:            helpModal,
-		AppList:              textList,
+		AppTable:             appTable,
 		MainContentContainer: mainContentContainer,
 		MainPageContainer:    mainPageContainer,
 		SearchInput:          searchInput,
@@ -195,24 +193,54 @@ func (v *AppView) ToggleHelp(commands map[model.Context]map[rune]*model.Command)
 	}
 }
 
-func (v *AppView) UpdateTitles(index, prevIndex int, text, prevText string) {
-	v.AppList.SetItemText(prevIndex, prevText, "")
-	v.AppList.SetItemText(index, "[::b]"+text, "")
-}
+func (v *AppView) UpdateAppTable(apps []argocd.ApplicationItem) {
+	v.AppTable.Clear()
 
-func (v *AppView) UpdateAppList(apps []argocd.ApplicationItem) {
-	for _, app := range apps {
-		colorTag := v.GetColorTag(app.Status.Health.Status)
-
-		name := fmt.Sprintf("%s%s", colorTag, app.Metadata.Name)
-		v.AppList.AddItem(name, "", 0, nil)
+	if len(apps) == 0 {
+		v.AppTable.SetCell(0, 0,
+			tview.NewTableCell("No data").
+				SetTextColor(v.Config.Text).
+				SetAlign(tview.AlignLeft))
+		return
 	}
+
+	for i, app := range apps {
+		color := v.Config.Progressing
+
+		switch app.Status.Health.Status {
+		case argocd.StatusDegraded:
+			color = v.Config.Degraded
+		case argocd.StatusHealthy:
+			color = v.Config.Healthy
+		case argocd.StatusProgressing:
+			color = v.Config.Progressing
+		case argocd.StatusMissing:
+			color = v.Config.Missing
+		}
+
+		tableCell := tview.NewTableCell(app.Metadata.Name).
+			SetTextColor(color).
+			SetAlign(tview.AlignLeft).
+			SetExpansion(1)
+
+		tableCell.
+			SetSelectedStyle(
+				tcell.StyleDefault.
+					Background(color).
+					Foreground(utils.GetContrastColor(color)).
+					Bold(true),
+			)
+
+		v.AppTable.SetCell(i, 0, tableCell)
+	}
+
+	v.AppTable.Select(1, 0)
 }
 
 func (v *AppView) RemoveSearchBar() {
 	v.MainPageContainer.Clear()
 	v.MainPageContainer.AddItem(v.MainPage, 0, 1, false)
-	v.App.SetFocus(v.AppList)
+	v.App.SetFocus(v.AppTable)
 	v.SearchInput.SetText("")
 	v.MainContentContainer.SetTitle(" Main Content ")
 }
@@ -228,29 +256,12 @@ func (v *AppView) Scroll(dir int) {
 	prim := v.App.GetFocus()
 
 	switch t := prim.(type) {
-	case *tview.List:
-		if dir == 1 {
-			if t.GetCurrentItem() == 0 {
-				t.SetCurrentItem(-1)
-				return
-			}
-
-			t.SetCurrentItem(t.GetCurrentItem() - 1)
-		}
-		if dir == -1 {
-			if t.GetCurrentItem()+1 == t.GetItemCount() {
-				t.SetCurrentItem(0)
-				return
-			}
-
-			t.SetCurrentItem(t.GetCurrentItem() + 1)
-		}
 	case *tview.Table:
 		row, _ := t.GetSelection()
 		offset := 1
 		newRow := row + offset*-1*dir
 
-		if newRow <= 0 {
+		if newRow <= 0 && t == v.MainTable {
 			newRow = 1
 		}
 
@@ -258,7 +269,7 @@ func (v *AppView) Scroll(dir int) {
 			return
 		}
 
-		t.Select(newRow, 0)
+		t.Select(max(newRow, 0), 0)
 	}
 }
 
@@ -269,7 +280,7 @@ func (v *AppView) ScrollTo(row int) {
 	case *tview.List:
 		t.SetCurrentItem(row)
 	case *tview.Table:
-		if row == 0 {
+		if row == 0 && t == v.MainTable {
 			t.Select(1, 0)
 			return
 		}
@@ -392,7 +403,7 @@ func (v *AppView) UpdateMainContent(resources []argocd.ApplicationNode) {
 				SetSelectedStyle(
 					tcell.StyleDefault.
 						Background(color).
-						Foreground(v.Config.Background).
+						Foreground(utils.GetContrastColor(color)).
 						Bold(true),
 				)
 
@@ -403,27 +414,24 @@ func (v *AppView) UpdateMainContent(resources []argocd.ApplicationNode) {
 	v.MainTable.Select(1, 0)
 }
 
-func (v *AppView) GetColorTag(status argocd.ApplicationHealthStatus) string {
+func (v *AppView) GetColorTag(status argocd.ApplicationHealthStatus) (string, tcell.Color) {
 	colorTag := ""
-	if string(status) == string(argocd.StatusHealthy) {
-		colorTag = fmt.Sprintf("[%s]", v.Config.Healthy.CSS())
+	var color tcell.Color
+
+	switch status {
+	case argocd.StatusHealthy:
+		color = v.Config.Healthy
+	case argocd.StatusDegraded:
+		color = v.Config.Degraded
+	case argocd.StatusMissing:
+		color = v.Config.Missing
+	case argocd.StatusUnknown:
+		color = v.Config.Header
+	case argocd.StatusProgressing:
+		color = v.Config.Progressing
 	}
 
-	if string(status) == string(argocd.StatusDegraded) {
-		colorTag = fmt.Sprintf("[%s]", v.Config.Degraded.CSS())
-	}
+	colorTag = fmt.Sprintf("[%s]", color.CSS())
 
-	if string(status) == string(argocd.StatusMissing) {
-		colorTag = fmt.Sprintf("[%s]", v.Config.Missing.CSS())
-	}
-
-	if string(status) == string(argocd.StatusUnknown) {
-		colorTag = fmt.Sprintf("[%s]", v.Config.Header.CSS())
-	}
-
-	if string(status) == string(argocd.StatusProgressing) {
-		colorTag = fmt.Sprintf("[%s]", v.Config.Progressing.CSS())
-	}
-
-	return colorTag
+	return colorTag, color
 }
