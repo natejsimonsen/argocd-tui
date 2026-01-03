@@ -26,6 +26,7 @@ func (c *Command) String() string {
 
 type CommandModel struct {
 	Commands map[Context]map[rune]*Command
+	Context  Context
 }
 
 func NewCommandModel() *CommandModel {
@@ -39,18 +40,24 @@ func NewCommandModel() *CommandModel {
 
 	return &CommandModel{
 		Commands: commands,
+		Context:  Global,
 	}
 }
 
-func (m *CommandModel) Add(r rune, context Context, desc string, handler func()) error {
+func (m *CommandModel) Add(r rune, context Context, desc string, handler func(ctx Context)) error {
 	if cmd, ok := m.Commands[context][r]; ok {
-		return fmt.Errorf("Error: command already exists, %s", cmd)
+		return fmt.Errorf("error: command already exists, %s", cmd)
 	}
 
 	cmd := Command{
 		Context:     context,
 		Description: desc,
-		Handler:     handler,
+		Handler: func() {
+			handler(context)
+			if context != Global {
+				m.Context = context
+			}
+		},
 	}
 
 	m.Commands[context][r] = &cmd

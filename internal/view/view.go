@@ -111,6 +111,14 @@ func NewAppView(app *tview.Application, config *config.Config) *AppView {
 		AddItem(mainTable, 0, 1, true).
 		SetBorder(true)
 
+	mainContentContainer.
+		SetBlurFunc(func() {
+			mainContentContainer.SetBorderColor(tview.Styles.BorderColor)
+		}).
+		SetFocusFunc(func() {
+			mainContentContainer.SetBorderColor(tcell.ColorAquaMarine)
+		})
+
 	mainPage.
 		AddItem(sideBar, 0, 1, true).
 		AddItem(mainContentContainer, 0, 3, false)
@@ -143,10 +151,10 @@ func NewAppView(app *tview.Application, config *config.Config) *AppView {
 
 	helpPage.
 		SetBlurFunc(func() {
-			textList.SetBorderColor(tview.Styles.BorderColor)
+			helpPage.SetBorderColor(tview.Styles.BorderColor)
 		}).
 		SetFocusFunc(func() {
-			textList.SetBorderColor(tcell.ColorAquaMarine)
+			helpPage.SetBorderColor(tcell.ColorAquaMarine)
 		})
 
 	helpModal := modal(helpPage, 80, 40)
@@ -215,6 +223,65 @@ func (v *AppView) AddSearchBar() {
 	v.MainPageContainer.AddItem(v.CommandBar, 3, 0, true)
 	v.MainPageContainer.AddItem(v.MainPage, 0, 1, false)
 	v.App.SetFocus(v.CommandBar)
+}
+
+func (v *AppView) Scroll(dir int) {
+	prim := v.App.GetFocus()
+
+	switch t := prim.(type) {
+	case *tview.List:
+		if dir == 1 {
+			if t.GetCurrentItem() == 0 {
+				t.SetCurrentItem(-1)
+				return
+			}
+
+			t.SetCurrentItem(t.GetCurrentItem() - 1)
+		}
+		if dir == -1 {
+			if t.GetCurrentItem()+1 == t.GetItemCount() {
+				t.SetCurrentItem(0)
+				return
+			}
+
+			t.SetCurrentItem(t.GetCurrentItem() + 1)
+		}
+	case *tview.Table:
+		row, _ := t.GetSelection()
+		offset := 1
+		newRow := row + offset*-1*dir
+
+		if newRow <= 0 {
+			newRow = 1
+		}
+
+		if newRow >= t.GetRowCount() {
+			return
+		}
+
+		t.Select(newRow, 0)
+	}
+}
+
+func (v *AppView) ScrollTo(row int) {
+	prim := v.App.GetFocus()
+
+	switch t := prim.(type) {
+	case *tview.List:
+		t.SetCurrentItem(row)
+	case *tview.Table:
+		if row == 0 {
+			t.Select(1, 0)
+			return
+		}
+		if row < 0 {
+			rows := t.GetRowCount()
+			t.Select(rows-1, 0)
+			return
+		}
+
+		t.Select(row, 0)
+	}
 }
 
 func (v *AppView) ToggleCommandBar() {

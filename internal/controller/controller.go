@@ -28,42 +28,37 @@ func (c *AppController) AddCommands() {
 	// AppList Commands
 	c.CommandModel.Add(
 		'g',
-		model.AppList,
+		model.Global,
 		"Goes to the top of the list",
-		func() {
-			c.View.AppList.SetCurrentItem(0)
+		func(ctx model.Context) {
+			c.View.ScrollTo(0)
 		},
 	)
+
 	c.CommandModel.Add(
 		'G',
-		model.AppList,
+		model.Global,
 		"Goes to the bottom of the list",
-		func() {
-			c.View.AppList.SetCurrentItem(c.View.AppList.GetItemCount() - 1)
+		func(ctx model.Context) {
+			c.View.ScrollTo(-1)
 		},
 	)
+
 	c.CommandModel.Add(
 		'j',
-		model.AppList,
+		model.Global,
 		"Scrolls down one row",
-		func() {
-			if c.View.AppList.GetCurrentItem()+1 == c.View.AppList.GetItemCount() {
-				c.View.AppList.SetCurrentItem(0)
-			}
-
-			c.View.AppList.SetCurrentItem(c.View.AppList.GetCurrentItem() + 1)
+		func(ctx model.Context) {
+			c.View.Scroll(-1)
 		},
 	)
+
 	c.CommandModel.Add(
 		'k',
-		model.AppList,
+		model.Global,
 		"Scrolls up one row",
-		func() {
-			if c.View.AppList.GetCurrentItem() == 0 {
-				c.View.AppList.SetCurrentItem(-1)
-			}
-
-			c.View.AppList.SetCurrentItem(c.View.AppList.GetCurrentItem() - 1)
+		func(ctx model.Context) {
+			c.View.Scroll(1)
 		},
 	)
 
@@ -72,7 +67,7 @@ func (c *AppController) AddCommands() {
 		'q',
 		model.App,
 		"Quits the application",
-		func() {
+		func(ctx model.Context) {
 			c.View.App.Stop()
 		},
 	)
@@ -81,7 +76,7 @@ func (c *AppController) AddCommands() {
 		'?',
 		model.App,
 		"Toggles the help page",
-		func() {
+		func(ctx model.Context) {
 			c.View.ToggleHelp(c.CommandModel.Commands)
 		},
 	)
@@ -91,19 +86,10 @@ func (c *AppController) AddCommands() {
 	// Main Page Commands
 
 	c.CommandModel.Add(
-		'J',
-		model.MainPage,
-		"Scrolls one item down",
-		func() {
-			c.View.ScrollMainContent(1)
-		},
-	)
-
-	c.CommandModel.Add(
 		'l',
 		model.MainPage,
 		"WIP for horizontal scrolling",
-		func() {
+		func(ctx model.Context) {
 			c.View.HorizontallyScrollMainTable(1)
 		},
 	)
@@ -112,17 +98,8 @@ func (c *AppController) AddCommands() {
 		'h',
 		model.MainPage,
 		"WIP for horizontal scrolling",
-		func() {
+		func(ctx model.Context) {
 			c.View.HorizontallyScrollMainTable(-1)
-		},
-	)
-
-	c.CommandModel.Add(
-		'K',
-		model.MainPage,
-		"Scroll up",
-		func() {
-			c.View.ScrollMainContent(-1)
 		},
 	)
 
@@ -130,7 +107,7 @@ func (c *AppController) AddCommands() {
 		'D',
 		model.MainPage,
 		"Page Down",
-		func() {
+		func(ctx model.Context) {
 			c.View.PageMainContent(1)
 		},
 	)
@@ -139,7 +116,7 @@ func (c *AppController) AddCommands() {
 		'U',
 		model.MainPage,
 		"Page Up",
-		func() {
+		func(ctx model.Context) {
 			c.View.PageMainContent(-1)
 		},
 	)
@@ -148,7 +125,7 @@ func (c *AppController) AddCommands() {
 		'/',
 		model.MainPage,
 		"Toggle Search Bar",
-		func() {
+		func(ctx model.Context) {
 			c.View.ToggleCommandBar()
 		},
 	)
@@ -170,7 +147,7 @@ func (c *AppController) SetupEventHandlers() {
 		c.Model.PrevIndex = index
 	})
 
-	// application vim-like navigation
+	// applist commands
 	c.View.AppList.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyRune {
 			if cmd, ok := c.CommandModel.Commands[model.AppList][event.Rune()]; ok {
@@ -193,9 +170,7 @@ func (c *AppController) SetupEventHandlers() {
 		return event
 	})
 
-	c.View.SideBar.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		isShiftPressed := event.Modifiers()&tcell.ModShift != 0
-
+	c.View.MainPage.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyRune {
 			if cmd, ok := c.CommandModel.Commands[model.MainPage][event.Rune()]; ok {
 				cmd.Handler()
@@ -203,34 +178,30 @@ func (c *AppController) SetupEventHandlers() {
 			}
 		}
 
-		if event.Key() == tcell.KeyPgDn {
-			c.View.PageMainContent(1)
-			return nil
+		return event
+	})
+
+	c.View.App.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Key() == tcell.KeyRune {
+			// app commands
+			if cmd, ok := c.CommandModel.Commands[model.App][event.Rune()]; ok {
+				cmd.Handler()
+				return nil
+			}
+
+			// global commands
+			if cmd, ok := c.CommandModel.Commands[model.Global][event.Rune()]; ok {
+				cmd.Handler()
+				return nil
+			}
 		}
 
-		if event.Key() == tcell.KeyPgUp {
-			c.View.PageMainContent(-1)
-			return nil
-		}
-
-		if event.Key() == tcell.KeyDown && isShiftPressed {
-			c.View.ScrollMainContent(1)
-			return nil
-		}
-
-		if event.Key() == tcell.KeyUp && isShiftPressed {
-			c.View.ScrollMainContent(-1)
-			return nil
-		}
-
-		// TODO: improve tab / shift tab key logic
 		if event.Key() == tcell.KeyTab {
-			c.View.App.SetFocus(c.View.StatusBox)
-			return nil
-		}
-
-		if event.Key() == tcell.KeyBacktab {
-			c.View.App.SetFocus(c.View.AppList)
+			if c.View.App.GetFocus() == c.View.MainTable {
+				c.View.App.SetFocus(c.View.AppList)
+				return nil
+			}
+			c.View.App.SetFocus(c.View.MainTable)
 			return nil
 		}
 
@@ -246,16 +217,6 @@ func (c *AppController) SetupEventHandlers() {
 			return nil
 		}
 
-		return event
-	})
-
-	c.View.App.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		if event.Key() == tcell.KeyRune {
-			if cmd, ok := c.CommandModel.Commands[model.App][event.Rune()]; ok {
-				cmd.Handler()
-				return nil
-			}
-		}
 		return event
 	})
 
