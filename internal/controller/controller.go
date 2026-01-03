@@ -141,6 +141,10 @@ func (c *AppController) SetupEventHandlers() {
 
 	// global cmds
 	c.View.App.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if c.View.SearchInput.HasFocus() {
+			return event
+		}
+
 		if event.Key() == tcell.KeyRune {
 			// app commands
 			if cmd, ok := c.CommandModel.Commands[model.App][event.Rune()]; ok {

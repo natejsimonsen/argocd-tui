@@ -256,6 +256,23 @@ func (v *AppView) Scroll(dir int) {
 	prim := v.App.GetFocus()
 
 	switch t := prim.(type) {
+	case *tview.List:
+		if dir == 1 {
+			if t.GetCurrentItem() == 0 {
+				t.SetCurrentItem(-1)
+				return
+			}
+
+			t.SetCurrentItem(t.GetCurrentItem() - 1)
+		}
+		if dir == -1 {
+			if t.GetCurrentItem()+1 == t.GetItemCount() {
+				t.SetCurrentItem(0)
+				return
+			}
+
+			t.SetCurrentItem(t.GetCurrentItem() + 1)
+		}
 	case *tview.Table:
 		row, _ := t.GetSelection()
 		offset := 1
@@ -408,11 +425,15 @@ func (v *AppView) UpdateMainContent(resources []argocd.ApplicationNode) {
 						Bold(true),
 				)
 
+			if i == len(columns)-1 {
+				tableCell.SetExpansion(1)
+			}
+
 			v.MainTable.SetCell(row+1, i, tableCell)
 		}
 	}
 
-	v.MainTable.Select(1, 0)
+	v.MainTable.Select(1, 0).ScrollToBeginning()
 }
 
 func (v *AppView) GetColorTag(status argocd.ApplicationHealthStatus) (string, tcell.Color) {
