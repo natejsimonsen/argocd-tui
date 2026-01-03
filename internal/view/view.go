@@ -234,7 +234,7 @@ func (v *AppView) UpdateAppTable(apps []argocd.ApplicationItem) {
 		v.AppTable.SetCell(i, 0, tableCell)
 	}
 
-	v.AppTable.Select(1, 0)
+	v.AppTable.Select(0, 0)
 }
 
 func (v *AppView) RemoveSearchBar() {
@@ -358,7 +358,8 @@ func (v *AppView) UpdateMainContent(resources []argocd.ApplicationNode) {
 			tview.NewTableCell(column).
 				SetTextColor(v.Config.Header).
 				SetAlign(tview.AlignLeft),
-		)
+		).
+			SetFixed(1, i)
 	}
 
 	for row, manifest := range resources {
