@@ -92,8 +92,7 @@ func NewAppView(app *tview.Application, config *config.Config, logger *logrus.Lo
 	mainTable.SetSelectable(true, false)
 
 	sideBar.
-		AddItem(appTable, 0, 1, true).
-		AddItem(bsBox, 0, 1, true)
+		AddItem(appTable, 0, 1, true)
 
 	mainContentContainer.
 		AddItem(mainTable, 0, 1, true).
@@ -184,17 +183,26 @@ func (v *AppView) AddSearchInput() {
 		AddItem(searchInput, 0, 1, true)
 }
 
-func (v *AppView) ToggleHelp(commands map[model.Context]map[model.KeyStroke]*model.Command) {
+func (v *AppView) ToggleHelp() {
 	if page, _ := v.Pages.GetFrontPage(); page == "help page" {
 		v.RemoveHelp()
 		return
 	}
 
 	v.Pages.ShowPage("help page")
+}
+
+func (v *AppView) UpdateHelp(commands map[model.Context]map[model.KeyStroke]*model.Command, filter string) {
+	v.HelpPage.Clear()
 
 	for ctx, cmdMap := range commands {
 		for trigger, cmd := range cmdMap {
-			v.HelpPage.AddItem(fmt.Sprintf("%c - %-10s - %-10s", trigger, ctx, cmd), "", 0, nil)
+			if strings.Contains(
+				strings.ToLower(cmd.String()),
+				strings.ToLower(filter),
+			) {
+				v.HelpPage.AddItem(fmt.Sprintf("%c - %-10s - %-10s", trigger, ctx, cmd), "", 0, nil)
+			}
 		}
 	}
 }
@@ -202,9 +210,10 @@ func (v *AppView) ToggleHelp(commands map[model.Context]map[model.KeyStroke]*mod
 func (v *AppView) RemoveHelp() {
 	v.Pages.HidePage("help page")
 	v.HelpPage.Clear()
+	v.App.SetFocus(v.AppTable)
 }
 
-func (v *AppView) UpdateAppTable(apps []argocd.ApplicationItem) {
+func (v *AppView) UpdateAppTable(apps []argocd.ApplicationItem, filter string) {
 	v.AppTable.Clear()
 
 	if len(apps) == 0 {
@@ -215,7 +224,23 @@ func (v *AppView) UpdateAppTable(apps []argocd.ApplicationItem) {
 		return
 	}
 
-	for i, app := range apps {
+	filteredApps := []argocd.ApplicationItem{}
+
+	if filter == "" {
+		filteredApps = apps
+	} else {
+		for _, app := range apps {
+			if strings.Contains(
+				strings.ToLower(app.Metadata.Name),
+				strings.ToLower(filter),
+			) {
+				filteredApps = append(filteredApps, app)
+			}
+		}
+
+	}
+
+	for i, app := range filteredApps {
 		color := v.Config.Progressing
 
 		switch app.Status.Health.Status {
@@ -339,8 +364,16 @@ func (v *AppView) ClearSearch() {
 }
 
 func (v *AppView) SetSearchTitle(search string) {
-	title := strings.Split(v.MainContentContainer.GetTitle(), "/")[0]
-	v.MainContentContainer.SetTitle(fmt.Sprintf("%s / %s ", title, search))
+	parts := strings.Split(v.MainContentContainer.GetTitle(), "/")
+	title := strings.Trim(parts[0], " ")
+	if search == "" {
+		v.MainContentContainer.SetTitle(fmt.Sprintf(" %s ", title))
+		return
+	}
+
+	searchStr := fmt.Sprintf(" / %s", search)
+
+	v.MainContentContainer.SetTitle(fmt.Sprintf(" %s%s ", title, searchStr))
 }
 
 // TODO: refactor to global func
@@ -362,7 +395,7 @@ func (v *AppView) SetSearchTitle(search string) {
 // 	v.MainTable.Select(newRow, 0)
 // }
 
-func (v *AppView) UpdateMainContent(resources []argocd.ApplicationNode) {
+func (v *AppView) UpdateMainContent(resources []argocd.ApplicationNode, filter string) {
 	v.MainTable.Clear()
 
 	if len(resources) == 0 {
@@ -394,7 +427,19 @@ func (v *AppView) UpdateMainContent(resources []argocd.ApplicationNode) {
 			SetFixed(1, i)
 	}
 
-	for row, manifest := range resources {
+	filteredResources := []argocd.ApplicationNode{}
+
+	if filter == "" {
+		filteredResources = resources
+	} else {
+		for _, manifest := range resources {
+			if strings.Contains(strings.ToLower(manifest.Name), strings.ToLower(filter)) {
+				filteredResources = append(filteredResources, manifest)
+			}
+		}
+	}
+
+	for row, manifest := range filteredResources {
 		color := v.Config.Progressing
 
 		switch manifest.Health.Status {
@@ -449,26 +494,4 @@ func (v *AppView) UpdateMainContent(resources []argocd.ApplicationNode) {
 	}
 
 	v.MainTable.Select(1, 0).ScrollToBeginning()
-}
-
-func (v *AppView) GetColorTag(status argocd.ApplicationHealthStatus) (string, tcell.Color) {
-	colorTag := ""
-	var color tcell.Color
-
-	switch status {
-	case argocd.StatusHealthy:
-		color = v.Config.Healthy
-	case argocd.StatusDegraded:
-		color = v.Config.Degraded
-	case argocd.StatusMissing:
-		color = v.Config.Missing
-	case argocd.StatusUnknown:
-		color = v.Config.Header
-	case argocd.StatusProgressing:
-		color = v.Config.Progressing
-	}
-
-	colorTag = fmt.Sprintf("[%s]", color.CSS())
-
-	return colorTag, color
 }
