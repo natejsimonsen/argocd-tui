@@ -339,8 +339,16 @@ func (v *AppView) ClearSearch() {
 }
 
 func (v *AppView) SetSearchTitle(search string) {
-	title := strings.Split(v.MainContentContainer.GetTitle(), "/")[0]
-	v.MainContentContainer.SetTitle(fmt.Sprintf("%s / %s ", title, search))
+	parts := strings.Split(v.MainContentContainer.GetTitle(), "/")
+	title := strings.Trim(parts[0], " ")
+	if search == "" {
+		v.MainContentContainer.SetTitle(fmt.Sprintf(" %s ", title))
+		return
+	}
+
+	searchStr := fmt.Sprintf(" / %s", search)
+
+	v.MainContentContainer.SetTitle(fmt.Sprintf(" %s%s ", title, searchStr))
 }
 
 // TODO: refactor to global func
@@ -362,7 +370,7 @@ func (v *AppView) SetSearchTitle(search string) {
 // 	v.MainTable.Select(newRow, 0)
 // }
 
-func (v *AppView) UpdateMainContent(resources []argocd.ApplicationNode) {
+func (v *AppView) UpdateMainContent(resources []argocd.ApplicationNode, filter string) {
 	v.MainTable.Clear()
 
 	if len(resources) == 0 {
@@ -394,7 +402,19 @@ func (v *AppView) UpdateMainContent(resources []argocd.ApplicationNode) {
 			SetFixed(1, i)
 	}
 
-	for row, manifest := range resources {
+	filteredResources := []argocd.ApplicationNode{}
+
+	if filter == "" {
+		filteredResources = resources
+	} else {
+		for _, manifest := range resources {
+			if strings.Contains(strings.ToLower(manifest.Name), strings.ToLower(filter)) {
+				filteredResources = append(filteredResources, manifest)
+			}
+		}
+	}
+
+	for row, manifest := range filteredResources {
 		color := v.Config.Progressing
 
 		switch manifest.Health.Status {

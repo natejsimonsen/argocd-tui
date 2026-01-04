@@ -126,8 +126,7 @@ func (c *AppController) AddCommands() {
 			c.Model.MainFilter = c.View.SearchInput.GetText()
 			c.View.ToggleCommandBar()
 			c.View.SetSearchTitle(c.Model.MainFilter)
-			c.Model.SelectedAppResources = c.FilterContent(c.Model.MainFilter)
-			c.View.UpdateMainContent(c.Model.SelectedAppResources)
+			c.View.UpdateMainContent(c.Model.SelectedAppResources, c.Model.MainFilter)
 		},
 	)
 }
@@ -138,7 +137,7 @@ func (c *AppController) SetupEventHandlers() {
 	c.View.AppTable.SetSelectionChangedFunc(func(row int, col int) {
 		name := c.View.AppTable.GetCell(row, col)
 		c.Model.LoadResources(name.Text)
-		c.View.UpdateMainContent(c.Model.SelectedAppResources)
+		c.View.UpdateMainContent(c.Model.SelectedAppResources, "")
 	})
 
 	// apptable commands
@@ -214,7 +213,8 @@ func (c *AppController) SetupEventHandlers() {
 		if event.Key() == tcell.KeyEsc {
 			if c.Model.MainFilter != "" {
 				c.Model.MainFilter = ""
-				c.View.ClearSearch()
+				c.View.SetSearchTitle("")
+				c.View.UpdateMainContent(c.Model.SelectedAppResources, "")
 				return nil
 			}
 
@@ -245,7 +245,7 @@ func (c *AppController) SetupEventHandlers() {
 	})
 }
 
-func (c *AppController) FilterContent(search string) []argocd.ApplicationNode {
+func (c *AppController) FilterContent() []argocd.ApplicationNode {
 	var filteredResources []argocd.ApplicationNode
 
 	for _, app := range c.Model.SelectedAppResources {
