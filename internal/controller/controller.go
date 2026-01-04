@@ -123,10 +123,10 @@ func (c *AppController) AddCommands() {
 		model.CommandBar,
 		"Search for substrings in the currently focused pane",
 		func(ctx model.Context) {
-			c.Model.SearchString = c.View.SearchInput.GetText()
+			c.Model.MainFilter = c.View.SearchInput.GetText()
 			c.View.ToggleCommandBar()
-			c.View.SetSearchTitle(c.Model.SearchString)
-			c.Model.SelectedAppResources = c.FilterContent(c.Model.SearchString)
+			c.View.SetSearchTitle(c.Model.MainFilter)
+			c.Model.SelectedAppResources = c.FilterContent(c.Model.MainFilter)
 			c.View.UpdateMainContent(c.Model.SelectedAppResources)
 		},
 	)
@@ -212,8 +212,8 @@ func (c *AppController) SetupEventHandlers() {
 		}
 
 		if event.Key() == tcell.KeyEsc {
-			if c.Model.SearchString != "" {
-				c.Model.SearchString = ""
+			if c.Model.MainFilter != "" {
+				c.Model.MainFilter = ""
 				c.View.ClearSearch()
 				return nil
 			}
@@ -249,7 +249,7 @@ func (c *AppController) FilterContent(search string) []argocd.ApplicationNode {
 	var filteredResources []argocd.ApplicationNode
 
 	for _, app := range c.Model.SelectedAppResources {
-		if strings.Contains(app.Name, c.Model.SearchString) {
+		if strings.Contains(app.Name, c.Model.MainFilter) {
 			filteredResources = append(filteredResources, app)
 		}
 	}

@@ -10,7 +10,8 @@ type AppModel struct {
 	Logger               *logrus.Logger
 	Applications         []argocd.ApplicationItem
 	SelectedAppName      string
-	SearchString         string
+	MainFilter           string
+	AppFilter            string
 	SelectedAppResources []argocd.ApplicationNode
 	ScrollOffset         int
 	PrevIndex            int
