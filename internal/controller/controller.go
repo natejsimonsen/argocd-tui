@@ -227,11 +227,28 @@ func (c *AppController) SetupEventHandlers() {
 		}
 
 		if event.Key() == tcell.KeyEsc {
-			if c.Model.MainFilter != "" {
-				c.Model.MainFilter = ""
-				c.View.SetSearchTitle("")
-				c.View.UpdateMainContent(c.Model.SelectedAppResources, "")
-				return nil
+			switch c.View.App.GetFocus() {
+			case c.View.AppTable:
+				if c.Model.AppFilter != "" {
+					c.Model.AppFilter = ""
+					c.View.SetSearchTitle("")
+					c.View.UpdateAppTable(c.Model.Applications, "")
+					return nil
+				}
+			case c.View.MainTable:
+				if c.Model.MainFilter != "" {
+					c.Model.MainFilter = ""
+					c.View.SetSearchTitle("")
+					c.View.UpdateMainContent(c.Model.SelectedAppResources, "")
+					return nil
+				}
+			case c.View.HelpPage:
+				if c.Model.HelpFilter != "" {
+					c.Model.HelpFilter = ""
+					c.View.SetSearchTitle("")
+					c.View.UpdateHelp(c.CommandModel.Commands, "")
+					return nil
+				}
 			}
 
 			return event
