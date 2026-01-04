@@ -89,6 +89,16 @@ func (c *AppController) AddCommands() {
 		},
 	)
 
+	// Help Page Commands
+	c.CommandModel.Add(
+		model.KeyStroke{Key: tcell.KeyEsc},
+		model.Help,
+		"Exit Search Page",
+		func(ctx model.Context) {
+			c.View.ToggleHelp(c.CommandModel.Commands)
+		},
+	)
+
 	// Command Bar Commands
 	c.CommandModel.Add(
 		model.KeyStroke{Rune: '/'},
@@ -146,13 +156,24 @@ func (c *AppController) SetupEventHandlers() {
 	// help page cmds
 	c.View.HelpPage.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyRune {
+			// runes
 			if cmd, ok := c.CommandModel.Commands[model.Help][model.KeyStroke{Rune: event.Rune()}]; ok {
 				cmd.Handler()
 				return nil
 			}
 		}
 
+		// keys
+		if cmd, ok := c.CommandModel.Commands[model.Help][model.KeyStroke{Key: event.Key()}]; ok {
+			cmd.Handler()
+			return nil
+		}
+
 		return event
+	})
+
+	c.View.HelpPage.SetBlurFunc(func() {
+		c.View.RemoveHelp()
 	})
 
 	// main page cmds
@@ -170,7 +191,6 @@ func (c *AppController) SetupEventHandlers() {
 	// global cmds
 	c.View.App.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if c.View.CommandBar.HasFocus() {
-			c.View.SetSearchTitle("oh yes, it's true,")
 			return event
 		}
 
@@ -193,14 +213,12 @@ func (c *AppController) SetupEventHandlers() {
 
 		if event.Key() == tcell.KeyEsc {
 			if c.Model.SearchString != "" {
-				c.Model.LoadResources(c.Model.SelectedAppName)
-				c.View.SetSearchTitle("")
-				c.View.UpdateMainContent(c.Model.SelectedAppResources)
+				c.Model.SearchString = ""
+				c.View.ClearSearch()
+				return nil
 			}
 
-			c.Model.SearchString = ""
-			c.View.ClearSearch()
-			return nil
+			return event
 		}
 
 		return event
