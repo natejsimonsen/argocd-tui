@@ -210,6 +210,7 @@ func (v *AppView) UpdateHelp(commands map[model.Context]map[model.KeyStroke]*mod
 func (v *AppView) RemoveHelp() {
 	v.Pages.HidePage("help page")
 	v.HelpPage.Clear()
+	v.App.SetFocus(v.AppTable)
 }
 
 func (v *AppView) UpdateAppTable(apps []argocd.ApplicationItem, filter string) {
