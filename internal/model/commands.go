@@ -2,16 +2,19 @@ package model
 
 import (
 	"fmt"
+
+	"github.com/gdamore/tcell/v2"
 )
 
 type Context string
 
 const (
-	App      = "App"
-	Global   = "Global"
-	AppTable = "AppTable"
-	MainPage = "MainPage"
-	Help     = "Help"
+	App        = "App"
+	Global     = "Global"
+	CommandBar = "CommandBar"
+	AppTable   = "AppTable"
+	MainPage   = "MainPage"
+	Help       = "Help"
 )
 
 type Command struct {
@@ -24,19 +27,25 @@ func (c *Command) String() string {
 	return fmt.Sprintf("%-10s - %s", c.Context, c.Description)
 }
 
+type KeyStroke struct {
+	Rune rune
+	Key  tcell.Key
+}
+
 type CommandModel struct {
-	Commands map[Context]map[rune]*Command
+	Commands map[Context]map[KeyStroke]*Command
 	Context  Context
 }
 
 func NewCommandModel() *CommandModel {
-	commands := map[Context]map[rune]*Command{}
+	commands := map[Context]map[KeyStroke]*Command{}
 
-	commands[App] = map[rune]*Command{}
-	commands[Global] = map[rune]*Command{}
-	commands[AppTable] = map[rune]*Command{}
-	commands[MainPage] = map[rune]*Command{}
-	commands[Help] = map[rune]*Command{}
+	commands[App] = map[KeyStroke]*Command{}
+	commands[Global] = map[KeyStroke]*Command{}
+	commands[CommandBar] = map[KeyStroke]*Command{}
+	commands[AppTable] = map[KeyStroke]*Command{}
+	commands[MainPage] = map[KeyStroke]*Command{}
+	commands[Help] = map[KeyStroke]*Command{}
 
 	return &CommandModel{
 		Commands: commands,
@@ -44,8 +53,8 @@ func NewCommandModel() *CommandModel {
 	}
 }
 
-func (m *CommandModel) Add(r rune, context Context, desc string, handler func(ctx Context)) error {
-	if cmd, ok := m.Commands[context][r]; ok {
+func (m *CommandModel) Add(ks KeyStroke, context Context, desc string, handler func(ctx Context)) error {
+	if cmd, ok := m.Commands[context][ks]; ok {
 		return fmt.Errorf("error: command already exists, %s", cmd)
 	}
 
@@ -60,6 +69,6 @@ func (m *CommandModel) Add(r rune, context Context, desc string, handler func(ct
 		},
 	}
 
-	m.Commands[context][r] = &cmd
+	m.Commands[context][ks] = &cmd
 	return nil
 }

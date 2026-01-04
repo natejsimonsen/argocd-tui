@@ -26,7 +26,7 @@ func NewAppController(m *model.AppModel, cm *model.CommandModel, v *view.AppView
 func (c *AppController) AddCommands() {
 	// AppTable Commands
 	c.CommandModel.Add(
-		'g',
+		model.KeyStroke{Rune: 'g'},
 		model.Global,
 		"Goes to the top of the list",
 		func(ctx model.Context) {
@@ -35,7 +35,7 @@ func (c *AppController) AddCommands() {
 	)
 
 	c.CommandModel.Add(
-		'G',
+		model.KeyStroke{Rune: 'G'},
 		model.Global,
 		"Goes to the bottom of the list",
 		func(ctx model.Context) {
@@ -44,7 +44,7 @@ func (c *AppController) AddCommands() {
 	)
 
 	c.CommandModel.Add(
-		'j',
+		model.KeyStroke{Rune: 'j'},
 		model.Global,
 		"Scrolls down one row",
 		func(ctx model.Context) {
@@ -53,7 +53,7 @@ func (c *AppController) AddCommands() {
 	)
 
 	c.CommandModel.Add(
-		'k',
+		model.KeyStroke{Rune: 'k'},
 		model.Global,
 		"Scrolls up one row",
 		func(ctx model.Context) {
@@ -63,8 +63,8 @@ func (c *AppController) AddCommands() {
 
 	// App Commands
 	c.CommandModel.Add(
-		'q',
-		model.App,
+		model.KeyStroke{Rune: 'q'},
+		model.Global,
 		"Quits the application",
 		func(ctx model.Context) {
 			c.View.App.Stop()
@@ -72,24 +72,52 @@ func (c *AppController) AddCommands() {
 	)
 
 	c.CommandModel.Add(
-		'?',
-		model.App,
+		model.KeyStroke{Rune: '?'},
+		model.Global,
 		"Toggles the help page",
 		func(ctx model.Context) {
 			c.View.ToggleHelp(c.CommandModel.Commands)
 		},
 	)
 
-	// Help Commands
-
-	// Main Page Commands
-
 	c.CommandModel.Add(
-		'/',
-		model.MainPage,
+		model.KeyStroke{Rune: '/'},
+		model.Global,
 		"Toggle Search Bar",
 		func(ctx model.Context) {
 			c.View.ToggleCommandBar()
+		},
+	)
+
+	// Command Bar Commands
+	c.CommandModel.Add(
+		model.KeyStroke{Rune: '/'},
+		model.CommandBar,
+		"Toggle Search Bar",
+		func(ctx model.Context) {
+			c.View.ToggleCommandBar()
+		},
+	)
+
+	c.CommandModel.Add(
+		model.KeyStroke{Key: tcell.KeyEsc},
+		model.CommandBar,
+		"Toggle Search Bar",
+		func(ctx model.Context) {
+			c.View.ToggleCommandBar()
+		},
+	)
+
+	c.CommandModel.Add(
+		model.KeyStroke{Key: tcell.KeyEnter},
+		model.CommandBar,
+		"Search for substrings in the currently focused pane",
+		func(ctx model.Context) {
+			c.Model.SearchString = c.View.SearchInput.GetText()
+			c.View.ToggleCommandBar()
+			c.View.SetSearchTitle(c.Model.SearchString)
+			c.Model.SelectedAppResources = c.FilterContent(c.Model.SearchString)
+			c.View.UpdateMainContent(c.Model.SelectedAppResources)
 		},
 	)
 }
@@ -106,7 +134,7 @@ func (c *AppController) SetupEventHandlers() {
 	// apptable commands
 	c.View.AppTable.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyRune {
-			if cmd, ok := c.CommandModel.Commands[model.AppTable][event.Rune()]; ok {
+			if cmd, ok := c.CommandModel.Commands[model.AppTable][model.KeyStroke{Rune: event.Rune()}]; ok {
 				cmd.Handler()
 				return nil
 			}
@@ -118,7 +146,7 @@ func (c *AppController) SetupEventHandlers() {
 	// help page cmds
 	c.View.HelpPage.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyRune {
-			if cmd, ok := c.CommandModel.Commands[model.Help][event.Rune()]; ok {
+			if cmd, ok := c.CommandModel.Commands[model.Help][model.KeyStroke{Rune: event.Rune()}]; ok {
 				cmd.Handler()
 				return nil
 			}
@@ -130,7 +158,7 @@ func (c *AppController) SetupEventHandlers() {
 	// main page cmds
 	c.View.MainPage.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyRune {
-			if cmd, ok := c.CommandModel.Commands[model.MainPage][event.Rune()]; ok {
+			if cmd, ok := c.CommandModel.Commands[model.MainPage][model.KeyStroke{Rune: event.Rune()}]; ok {
 				cmd.Handler()
 				return nil
 			}
@@ -141,19 +169,14 @@ func (c *AppController) SetupEventHandlers() {
 
 	// global cmds
 	c.View.App.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		if c.View.SearchInput.HasFocus() {
+		if c.View.CommandBar.HasFocus() {
+			c.View.SetSearchTitle("oh yes, it's true,")
 			return event
 		}
 
 		if event.Key() == tcell.KeyRune {
-			// app commands
-			if cmd, ok := c.CommandModel.Commands[model.App][event.Rune()]; ok {
-				cmd.Handler()
-				return nil
-			}
-
 			// global commands
-			if cmd, ok := c.CommandModel.Commands[model.Global][event.Rune()]; ok {
+			if cmd, ok := c.CommandModel.Commands[model.Global][model.KeyStroke{Rune: event.Rune()}]; ok {
 				cmd.Handler()
 				return nil
 			}
@@ -185,27 +208,21 @@ func (c *AppController) SetupEventHandlers() {
 
 	// command bar cmds
 	c.View.CommandBar.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		// handle runes
 		if event.Key() == tcell.KeyRune {
-			if event.Rune() == '/' {
-				c.View.ToggleCommandBar()
+			if cmd, ok := c.CommandModel.Commands[model.CommandBar][model.KeyStroke{Rune: event.Rune()}]; ok {
+				cmd.Handler()
 				return nil
 			}
 		}
 
-		if event.Key() == tcell.KeyEsc {
-			c.View.ToggleCommandBar()
-			return nil
+		// handle tcell.Key
+		if cmd, ok := c.CommandModel.Commands[model.CommandBar][model.KeyStroke{Key: event.Key()}]; ok {
+			cmd.Handler()
+			return event
 		}
 
-		if event.Key() == tcell.KeyEnter {
-			c.Model.SearchString = c.View.SearchInput.GetText()
-			c.View.ToggleCommandBar()
-			c.View.SetSearchTitle(c.Model.SearchString)
-			c.Model.SelectedAppResources = c.FilterContent(c.Model.SearchString)
-			c.View.UpdateMainContent(c.Model.SelectedAppResources)
-			return nil
-		}
-
+		// if no event found, bubble event
 		return event
 	})
 }

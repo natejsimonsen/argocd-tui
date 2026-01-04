@@ -53,12 +53,8 @@ func NewAppView(app *tview.Application, config *config.Config, logger *logrus.Lo
 	commandBar := tview.NewFlex()
 	mainTable := tview.NewTable()
 	appTable := tview.NewTable()
-	searchInput := tview.NewInputField()
 	mainPageContainer := tview.NewFlex().
 		SetDirection(tview.FlexRow)
-
-	searchInput.SetFieldBackgroundColor(config.Background).
-		SetBorder(false)
 
 	mainContentContainer.
 		SetBorder(true).
@@ -98,9 +94,6 @@ func NewAppView(app *tview.Application, config *config.Config, logger *logrus.Lo
 	sideBar.
 		AddItem(appTable, 0, 1, true).
 		AddItem(bsBox, 0, 1, true)
-
-	commandBar.
-		AddItem(searchInput, 0, 1, true)
 
 	mainContentContainer.
 		AddItem(mainTable, 0, 1, true).
@@ -158,7 +151,7 @@ func NewAppView(app *tview.Application, config *config.Config, logger *logrus.Lo
 		AddPage("main page", mainPageContainer, true, true).
 		AddPage("help page", helpModal, true, false)
 
-	return &AppView{
+	appView := &AppView{
 		App:                  app,
 		Pages:                pages,
 		MainPage:             mainPage,
@@ -168,16 +161,30 @@ func NewAppView(app *tview.Application, config *config.Config, logger *logrus.Lo
 		AppTable:             appTable,
 		MainContentContainer: mainContentContainer,
 		MainPageContainer:    mainPageContainer,
-		SearchInput:          searchInput,
 		CommandBar:           commandBar,
 		MainTable:            mainTable,
 		StatusBox:            bsBox,
 		Config:               config,
 		Logger:               logger,
 	}
+
+	appView.AddSearchInput()
+
+	return appView
 }
 
-func (v *AppView) ToggleHelp(commands map[model.Context]map[rune]*model.Command) {
+func (v *AppView) AddSearchInput() {
+	searchInput := tview.NewInputField()
+	searchInput.SetFieldBackgroundColor(v.Config.Background).
+		SetBorder(false)
+
+	v.SearchInput = searchInput
+
+	v.CommandBar.
+		AddItem(searchInput, 0, 1, true)
+}
+
+func (v *AppView) ToggleHelp(commands map[model.Context]map[model.KeyStroke]*model.Command) {
 	if page, _ := v.Pages.GetFrontPage(); page == "help page" {
 		v.Pages.HidePage("help page")
 		v.HelpPage.Clear()
@@ -240,13 +247,15 @@ func (v *AppView) UpdateAppTable(apps []argocd.ApplicationItem) {
 func (v *AppView) RemoveSearchBar() {
 	v.MainPageContainer.Clear()
 	v.MainPageContainer.AddItem(v.MainPage, 0, 1, false)
-	v.App.SetFocus(v.AppTable)
 	v.SearchInput.SetText("")
+	v.CommandBar.RemoveItem(v.SearchInput)
 	v.MainContentContainer.SetTitle(" Main Content ")
+	v.App.SetFocus(v.AppTable)
 }
 
 func (v *AppView) AddSearchBar() {
 	v.MainPageContainer.Clear()
+	v.AddSearchInput()
 	v.MainPageContainer.AddItem(v.CommandBar, 3, 0, true)
 	v.MainPageContainer.AddItem(v.MainPage, 0, 1, false)
 	v.App.SetFocus(v.CommandBar)
