@@ -168,7 +168,7 @@ func NewAppView(app *tview.Application, config *config.Config, logger *logrus.Lo
 		Logger:               logger,
 	}
 
-	appView.AddSearchInput()
+	// appView.AddSearchInput()
 
 	return appView
 }
@@ -186,8 +186,7 @@ func (v *AppView) AddSearchInput() {
 
 func (v *AppView) ToggleHelp(commands map[model.Context]map[model.KeyStroke]*model.Command) {
 	if page, _ := v.Pages.GetFrontPage(); page == "help page" {
-		v.Pages.HidePage("help page")
-		v.HelpPage.Clear()
+		v.RemoveHelp()
 		return
 	}
 
@@ -198,6 +197,11 @@ func (v *AppView) ToggleHelp(commands map[model.Context]map[model.KeyStroke]*mod
 			v.HelpPage.AddItem(fmt.Sprintf("%c - %-10s - %-10s", trigger, ctx, cmd), "", 0, nil)
 		}
 	}
+}
+
+func (v *AppView) RemoveHelp() {
+	v.Pages.HidePage("help page")
+	v.HelpPage.Clear()
 }
 
 func (v *AppView) UpdateAppTable(apps []argocd.ApplicationItem) {
@@ -247,8 +251,10 @@ func (v *AppView) UpdateAppTable(apps []argocd.ApplicationItem) {
 func (v *AppView) RemoveSearchBar() {
 	v.MainPageContainer.Clear()
 	v.MainPageContainer.AddItem(v.MainPage, 0, 1, false)
-	v.SearchInput.SetText("")
-	v.CommandBar.RemoveItem(v.SearchInput)
+	if v.SearchInput != nil {
+		v.SearchInput.SetText("")
+		v.CommandBar.RemoveItem(v.SearchInput)
+	}
 	v.MainContentContainer.SetTitle(" Main Content ")
 	v.App.SetFocus(v.AppTable)
 }
