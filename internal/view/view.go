@@ -93,7 +93,6 @@ func NewAppView(app *tview.Application, config *config.Config, logger *logrus.Lo
 
 	sideBar.
 		AddItem(appTable, 0, 1, true)
-	// AddItem(bsBox, 0, 1, true)
 
 	mainContentContainer.
 		AddItem(mainTable, 0, 1, true).
@@ -494,26 +493,4 @@ func (v *AppView) UpdateMainContent(resources []argocd.ApplicationNode, filter s
 	}
 
 	v.MainTable.Select(1, 0).ScrollToBeginning()
-}
-
-func (v *AppView) GetColorTag(status argocd.ApplicationHealthStatus) (string, tcell.Color) {
-	colorTag := ""
-	var color tcell.Color
-
-	switch status {
-	case argocd.StatusHealthy:
-		color = v.Config.Healthy
-	case argocd.StatusDegraded:
-		color = v.Config.Degraded
-	case argocd.StatusMissing:
-		color = v.Config.Missing
-	case argocd.StatusUnknown:
-		color = v.Config.Header
-	case argocd.StatusProgressing:
-		color = v.Config.Progressing
-	}
-
-	colorTag = fmt.Sprintf("[%s]", color.CSS())
-
-	return colorTag, color
 }
