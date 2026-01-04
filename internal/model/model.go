@@ -2,6 +2,7 @@ package model
 
 import (
 	"example.com/main/services/argocd"
+	"github.com/rivo/tview"
 	"github.com/sirupsen/logrus"
 )
 
@@ -9,9 +10,11 @@ type AppModel struct {
 	ArgoCDService        *argocd.Service
 	Logger               *logrus.Logger
 	Applications         []argocd.ApplicationItem
+	PrevFocused          tview.Primitive
 	SelectedAppName      string
 	MainFilter           string
 	AppFilter            string
+	HelpFilter           string
 	SelectedAppResources []argocd.ApplicationNode
 	ScrollOffset         int
 	PrevIndex            int

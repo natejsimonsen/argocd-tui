@@ -16,6 +16,7 @@ type AppController struct {
 }
 
 func NewAppController(m *model.AppModel, cm *model.CommandModel, v *view.AppView) *AppController {
+	m.PrevFocused = v.AppTable
 	return &AppController{
 		Model:        m,
 		CommandModel: cm,
@@ -76,7 +77,12 @@ func (c *AppController) AddCommands() {
 		model.Global,
 		"Toggles the help page",
 		func(ctx model.Context) {
-			c.View.ToggleHelp(c.CommandModel.Commands)
+			c.View.ToggleHelp()
+			c.View.UpdateHelp(c.CommandModel.Commands, "")
+
+			if c.View.App.GetFocus() == c.View.HelpPage {
+				c.Model.PrevFocused = c.View.HelpPage
+			}
 		},
 	)
 
@@ -95,7 +101,7 @@ func (c *AppController) AddCommands() {
 		model.Help,
 		"Exit Search Page",
 		func(ctx model.Context) {
-			c.View.ToggleHelp(c.CommandModel.Commands)
+			c.View.ToggleHelp()
 		},
 	)
 
@@ -123,10 +129,22 @@ func (c *AppController) AddCommands() {
 		model.CommandBar,
 		"Search for substrings in the currently focused pane",
 		func(ctx model.Context) {
-			c.Model.MainFilter = c.View.SearchInput.GetText()
+			searchText := c.View.SearchInput.GetText()
 			c.View.ToggleCommandBar()
-			c.View.SetSearchTitle(c.Model.MainFilter)
-			c.View.UpdateMainContent(c.Model.SelectedAppResources, c.Model.MainFilter)
+			c.View.App.SetFocus(c.Model.PrevFocused)
+			c.View.SetSearchTitle(searchText)
+
+			switch c.View.App.GetFocus() {
+			case c.View.AppTable:
+				c.Model.AppFilter = searchText
+				c.View.UpdateAppTable(c.Model.Applications, c.Model.AppFilter)
+			case c.View.MainTable:
+				c.Model.MainFilter = searchText
+				c.View.UpdateMainContent(c.Model.SelectedAppResources, c.Model.MainFilter)
+			case c.View.HelpPage:
+				c.Model.HelpFilter = searchText
+				c.View.UpdateHelp(c.CommandModel.Commands, c.Model.HelpFilter)
+			}
 		},
 	)
 }
@@ -171,10 +189,6 @@ func (c *AppController) SetupEventHandlers() {
 		return event
 	})
 
-	c.View.HelpPage.SetBlurFunc(func() {
-		c.View.RemoveHelp()
-	})
-
 	// main page cmds
 	c.View.MainPage.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyRune {
@@ -203,9 +217,11 @@ func (c *AppController) SetupEventHandlers() {
 
 		if event.Key() == tcell.KeyTab {
 			if c.View.App.GetFocus() == c.View.MainTable {
+				c.Model.PrevFocused = c.View.AppTable
 				c.View.App.SetFocus(c.View.AppTable)
 				return nil
 			}
+			c.Model.PrevFocused = c.View.MainTable
 			c.View.App.SetFocus(c.View.MainTable)
 			return nil
 		}
@@ -260,7 +276,7 @@ func (c *AppController) FilterContent() []argocd.ApplicationNode {
 func (c *AppController) Start() error {
 	c.SetupEventHandlers()
 	c.Model.LoadApplications()
-	c.View.UpdateAppTable(c.Model.Applications)
+	c.View.UpdateAppTable(c.Model.Applications, "")
 	c.View.App.SetRoot(c.View.Pages, true)
 	return c.View.App.Run()
 }

@@ -92,8 +92,8 @@ func NewAppView(app *tview.Application, config *config.Config, logger *logrus.Lo
 	mainTable.SetSelectable(true, false)
 
 	sideBar.
-		AddItem(appTable, 0, 1, true).
-		AddItem(bsBox, 0, 1, true)
+		AddItem(appTable, 0, 1, true)
+	// AddItem(bsBox, 0, 1, true)
 
 	mainContentContainer.
 		AddItem(mainTable, 0, 1, true).
@@ -184,17 +184,26 @@ func (v *AppView) AddSearchInput() {
 		AddItem(searchInput, 0, 1, true)
 }
 
-func (v *AppView) ToggleHelp(commands map[model.Context]map[model.KeyStroke]*model.Command) {
+func (v *AppView) ToggleHelp() {
 	if page, _ := v.Pages.GetFrontPage(); page == "help page" {
 		v.RemoveHelp()
 		return
 	}
 
 	v.Pages.ShowPage("help page")
+}
+
+func (v *AppView) UpdateHelp(commands map[model.Context]map[model.KeyStroke]*model.Command, filter string) {
+	v.HelpPage.Clear()
 
 	for ctx, cmdMap := range commands {
 		for trigger, cmd := range cmdMap {
-			v.HelpPage.AddItem(fmt.Sprintf("%c - %-10s - %-10s", trigger, ctx, cmd), "", 0, nil)
+			if strings.Contains(
+				strings.ToLower(cmd.String()),
+				strings.ToLower(filter),
+			) {
+				v.HelpPage.AddItem(fmt.Sprintf("%c - %-10s - %-10s", trigger, ctx, cmd), "", 0, nil)
+			}
 		}
 	}
 }
@@ -204,7 +213,7 @@ func (v *AppView) RemoveHelp() {
 	v.HelpPage.Clear()
 }
 
-func (v *AppView) UpdateAppTable(apps []argocd.ApplicationItem) {
+func (v *AppView) UpdateAppTable(apps []argocd.ApplicationItem, filter string) {
 	v.AppTable.Clear()
 
 	if len(apps) == 0 {
@@ -215,7 +224,23 @@ func (v *AppView) UpdateAppTable(apps []argocd.ApplicationItem) {
 		return
 	}
 
-	for i, app := range apps {
+	filteredApps := []argocd.ApplicationItem{}
+
+	if filter == "" {
+		filteredApps = apps
+	} else {
+		for _, app := range apps {
+			if strings.Contains(
+				strings.ToLower(app.Metadata.Name),
+				strings.ToLower(filter),
+			) {
+				filteredApps = append(filteredApps, app)
+			}
+		}
+
+	}
+
+	for i, app := range filteredApps {
 		color := v.Config.Progressing
 
 		switch app.Status.Health.Status {
